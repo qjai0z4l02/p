@@ -16,7 +16,7 @@ import { bgOrange, brand, printError, printSuccess } from "../utils/ui";
 
 export const importCommand = new Command("import")
 	.alias("i")
-		.description("导入外部项目到 p 管理")
+	.description("导入外部项目到 p 管理")
 	.argument("[path]", "要导入的项目路径（. 表示当前目录，省略则交互选择）")
 	.action(async (inputPath?: string) => {
 		let sourcePath: string;
@@ -120,9 +120,7 @@ export const importCommand = new Command("import")
 
 		try {
 			await copyFiles(sourcePath, targetPath, files);
-			copySpinner.stop(
-				`${brand.success("✓")} 已复制 ${files.length} 个文件`,
-			);
+			copySpinner.stop(`${brand.success("✓")} 已复制 ${files.length} 个文件`);
 		} catch (error) {
 			copySpinner.stop("复制失败");
 			printError((error as Error).message);
@@ -135,14 +133,15 @@ export const importCommand = new Command("import")
 		});
 
 		console.log();
-		printSuccess(
-			`已导入项目: ${brand.primary(projectName)}`,
-		);
+		printSuccess(`已导入项目: ${brand.primary(projectName)}`);
 		console.log();
 		console.log(pc.dim("  源路径: ") + pc.underline(sourcePath));
 		console.log(pc.dim("  目标:   ") + pc.underline(targetPath));
 		console.log(
-			pc.dim("  提示:   ") + "下次用 " + brand.primary("p open") + pc.dim(" 打开时，可删除原始目录"),
+			pc.dim("  提示:   ") +
+				"下次用 " +
+				brand.primary("p open") +
+				pc.dim(" 打开时，可删除原始目录"),
 		);
 		console.log();
 	});

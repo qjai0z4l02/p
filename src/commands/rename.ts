@@ -1,10 +1,4 @@
-import {
-	intro,
-	isCancel,
-	outro,
-	spinner,
-	text,
-} from "@clack/prompts";
+import { intro, isCancel, outro, spinner, text } from "@clack/prompts";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
@@ -17,12 +11,9 @@ import {
 	saveProjectMeta,
 	validateProjectNameFormat,
 } from "../core/project";
+import { CANCEL, liveSearch } from "../utils/live-search";
+import { filterProjects, projectHint } from "../utils/project-search";
 import { execAndCapture } from "../utils/shell";
-import { liveSearch, CANCEL } from "../utils/live-search";
-import {
-	filterProjects,
-	projectHint,
-} from "../utils/project-search";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
 async function searchAndSelect(
@@ -102,7 +93,8 @@ async function moveWithTimeout(
 			});
 		}, timeoutMs);
 
-		fse.move(src, dest)
+		fse
+			.move(src, dest)
 			.then(() => {
 				clearTimeout(timer);
 				resolve({ success: true });
@@ -142,7 +134,9 @@ export const renameCommand = new Command("rename")
 				projectName = await searchAndSelect(projects, projectName);
 			} else {
 				printError(`项目不存在: ${projectName}`);
-				console.log(pc.dim("使用 ") + brand.primary("p ls") + pc.dim(" 查看所有项目"));
+				console.log(
+					pc.dim("使用 ") + brand.primary("p ls") + pc.dim(" 查看所有项目"),
+				);
 				process.exit(1);
 			}
 		}
@@ -228,7 +222,9 @@ export const renameCommand = new Command("rename")
 		if (repoSlug) {
 			const currentRepoName = repoSlug.split("/")[1];
 			console.log();
-			console.log(pc.dim("  当前远程仓库: ") + pc.underline(`github.com/${repoSlug}`));
+			console.log(
+				pc.dim("  当前远程仓库: ") + pc.underline(`github.com/${repoSlug}`),
+			);
 			console.log();
 
 			const remoteName = await text({
@@ -248,19 +244,26 @@ export const renameCommand = new Command("rename")
 					renameSpinner.stop("重命名 GitHub 仓库失败");
 					printError(result.error || "未知错误");
 				} else {
-					renameSpinner.stop(`${brand.success("✓")} GitHub 仓库已重命名为 ${brand.primary(finalName)}`);
+					renameSpinner.stop(
+						`${brand.success("✓")} GitHub 仓库已重命名为 ${brand.primary(finalName)}`,
+					);
 
 					// 更新本地 git remote URL
 					const owner = repoSlug.split("/")[0];
 					let newRemoteUrl: string;
-					if (remoteUrl!.includes("@")) {
+					if (remoteUrl?.includes("@")) {
 						newRemoteUrl = `git@github.com:${owner}/${finalName}.git`;
 					} else {
-						const tokenMatch = remoteUrl!.match(/^(https?:\/\/[^@]*@)?github\.com/);
-						const prefix = tokenMatch ? tokenMatch[1]! : "https://github.com/";
+						const tokenMatch = remoteUrl?.match(
+							/^(https?:\/\/[^@]*@)?github\.com/,
+						);
+						const prefix = tokenMatch?.[1] ?? "https://github.com/";
 						newRemoteUrl = `${prefix}github.com/${owner}/${finalName}.git`;
 					}
-					await execAndCapture(`git remote set-url origin ${newRemoteUrl}`, newPath);
+					await execAndCapture(
+						`git remote set-url origin ${newRemoteUrl}`,
+						newPath,
+					);
 				}
 			}
 		}

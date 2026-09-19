@@ -1,10 +1,8 @@
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
-
 import { listProjects } from "../core/project";
 import { getLocalTemplates, getPublishedTemplates } from "../core/template";
-import { loadConfig } from "../core/config";
 import { TEMPLATES_DIR } from "../utils/paths";
 import { brand, formatRelativeTime, printInfo } from "../utils/ui";
 
@@ -15,7 +13,9 @@ async function listTemplates(remoteOnly: boolean) {
 		const entries = Object.entries(published);
 		if (entries.length === 0) {
 			console.log();
-			printInfo(`暂无远程模板，使用 ${brand.primary("p templates publish")} 发布模板`);
+			printInfo(
+				`暂无远程模板，使用 ${brand.primary("p templates publish")} 发布模板`,
+			);
 			console.log();
 			return;
 		}
@@ -28,7 +28,7 @@ async function listTemplates(remoteOnly: boolean) {
 		console.log();
 
 		for (const [, meta] of entries) {
-			console.log("  " + brand.secondary("◆") + " " + brand.bold(meta.repo));
+			console.log(`  ${brand.secondary("◆")} ${brand.bold(meta.repo)}`);
 			console.log(pc.dim(`    ${meta.url}`));
 			console.log();
 		}
@@ -71,11 +71,7 @@ async function listTemplates(remoteOnly: boolean) {
 		const remoteTag = meta ? pc.cyan("  🌐 remote") : "";
 
 		console.log(
-			"  " +
-				brand.secondary("◆") +
-				" " +
-				brand.bold(tpl.name) +
-				remoteTag,
+			`  ${brand.secondary("◆")} ${brand.bold(tpl.name)}${remoteTag}`,
 		);
 		console.log(pc.dim(`    ${TEMPLATES_DIR}/${tpl.dir || tpl.name}`));
 		if (meta) {
@@ -128,9 +124,7 @@ export const lsCommand = new Command("ls")
 				project.tags && project.tags.length > 0
 					? ` ${project.tags.map((t) => pc.magenta(`#${t}`)).join(" ")}`
 					: "";
-			const noteDisplay = project.note
-				? ` ${pc.dim(`— ${project.note}`)}`
-				: "";
+			const noteDisplay = project.note ? ` ${pc.dim(`— ${project.note}`)}` : "";
 
 			console.log(
 				"  " +

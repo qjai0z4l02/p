@@ -269,7 +269,7 @@ ${NAME_RULES}
 	const totalTime = Date.now() - startTime;
 
 	if (options.debug) {
-		console.log(pc.dim("\n" + "─".repeat(40)));
+		console.log(pc.dim(`\n${"─".repeat(40)}`));
 		console.log(pc.dim("\nTotal time:"), `${totalTime}ms`);
 		console.log(
 			pc.dim("First token:"),

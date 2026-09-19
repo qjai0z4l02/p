@@ -2,7 +2,7 @@ import * as readline from "node:readline";
 import { Writable } from "node:stream";
 import pc from "picocolors";
 // @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
-import { cursor as ansiCursor, erase } from "sisteransi";
+import { cursor as ansiCursor } from "sisteransi";
 
 import { brand } from "./ui";
 
@@ -34,7 +34,11 @@ const MAX_VISIBLE = 8;
 
 export const CANCEL = Symbol("live-search:cancel");
 
-function buildInputLine(query: string, cursorPos: number, placeholder: string): string {
+function buildInputLine(
+	query: string,
+	cursorPos: number,
+	placeholder: string,
+): string {
 	if (query.length === 0 && placeholder) {
 		return pc.inverse(placeholder[0]) + pc.dim(placeholder.slice(1));
 	}
@@ -53,7 +57,9 @@ export async function liveSearch(
 	const multi = opts.multiSelect ?? false;
 
 	const interceptStream = new Writable({
-		write(_chunk, _encoding, callback) { callback(); },
+		write(_chunk, _encoding, callback) {
+			callback();
+		},
 	});
 
 	stdin.setRawMode(true);
@@ -91,9 +97,10 @@ export async function liveSearch(
 		const lines: string[] = [];
 
 		// 标题（多选时显示已选数量）
-		const countTag = multi && state.checked.size > 0
-			? pc.dim(` (已选 ${state.checked.size})`)
-			: "";
+		const countTag =
+			multi && state.checked.size > 0
+				? pc.dim(` (已选 ${state.checked.size})`)
+				: "";
 		lines.push(`  ${brand.secondary("◆")} ${opts.message}${countTag}`);
 
 		// 输入
@@ -105,8 +112,14 @@ export async function liveSearch(
 		lines.push(`  ${brand.secondary("│")}`);
 
 		// 结果列表
-		const visibleCount = Math.min(MAX_VISIBLE, state.filtered.length - state.scrollOffset);
-		const visible = state.filtered.slice(state.scrollOffset, state.scrollOffset + visibleCount);
+		const visibleCount = Math.min(
+			MAX_VISIBLE,
+			state.filtered.length - state.scrollOffset,
+		);
+		const visible = state.filtered.slice(
+			state.scrollOffset,
+			state.scrollOffset + visibleCount,
+		);
 
 		if (visible.length === 0) {
 			lines.push(`  ${brand.secondary("│")}   ${pc.dim("没有匹配的项目")}`);
@@ -134,7 +147,9 @@ export async function liveSearch(
 		// 滚动指示
 		const remaining = state.filtered.length - state.scrollOffset - MAX_VISIBLE;
 		if (remaining > 0) {
-			lines.push(`  ${brand.secondary("│")}   ${pc.dim(`... 还有 ${remaining} 个`)}`);
+			lines.push(
+				`  ${brand.secondary("│")}   ${pc.dim(`... 还有 ${remaining} 个`)}`,
+			);
 		}
 
 		// 底部提示
@@ -144,7 +159,7 @@ export async function liveSearch(
 		lines.push(`  ${brand.secondary("└")} ${pc.dim(hint)}`);
 
 		for (const line of lines) {
-			parts.push(line + "\x1b[K\n");
+			parts.push(`${line}\x1b[K\n`);
 		}
 
 		if (blockHeight > lines.length) {
@@ -178,7 +193,9 @@ export async function liveSearch(
 				parts.push("\x1b[K\n");
 			}
 			parts.push(ansiCursor.up(blockHeight));
-			parts.push(`  ${brand.success("◆")} ${opts.message} ${brand.primary(label)}\n`);
+			parts.push(
+				`  ${brand.success("◆")} ${opts.message} ${brand.primary(label)}\n`,
+			);
 			stdout.write(parts.join(""));
 			cleanup();
 			resolve(values);
@@ -191,7 +208,9 @@ export async function liveSearch(
 				parts.push("\x1b[K\n");
 			}
 			parts.push(ansiCursor.up(blockHeight));
-			parts.push(`  ${brand.secondary("◆")} ${opts.message} ${pc.dim("已取消")}\n`);
+			parts.push(
+				`  ${brand.secondary("◆")} ${opts.message} ${pc.dim("已取消")}\n`,
+			);
 			stdout.write(parts.join(""));
 			cleanup();
 			resolve(CANCEL);
@@ -208,7 +227,7 @@ export async function liveSearch(
 		}
 
 		function toggleAll() {
-			if (state.filtered.every(f => state.checked.has(f.value))) {
+			if (state.filtered.every((f) => state.checked.has(f.value))) {
 				// 全部已选 → 取消全选
 				for (const f of state.filtered) state.checked.delete(f.value);
 			} else {
@@ -298,7 +317,10 @@ export async function liveSearch(
 						}
 					} else if (state.filtered.length > 0) {
 						state.selectedIndex = state.filtered.length - 1;
-						state.scrollOffset = Math.max(0, state.filtered.length - MAX_VISIBLE);
+						state.scrollOffset = Math.max(
+							0,
+							state.filtered.length - MAX_VISIBLE,
+						);
 					}
 					break;
 				}
@@ -336,14 +358,12 @@ export async function liveSearch(
 		}
 
 		function refilter() {
-			state.filtered = state.query
-				? opts.filterFn(state.query)
-				: opts.options;
+			state.filtered = state.query ? opts.filterFn(state.query) : opts.options;
 			state.selectedIndex = 0;
 			state.scrollOffset = 0;
 			// 移除不再可见的 checked 项
 			if (multi) {
-				const visible = new Set(state.filtered.map(f => f.value));
+				const visible = new Set(state.filtered.map((f) => f.value));
 				for (const v of state.checked) {
 					if (!visible.has(v)) state.checked.delete(v);
 				}

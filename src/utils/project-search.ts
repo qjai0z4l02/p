@@ -10,8 +10,8 @@ export function filterProjects<
 	return projects.filter(
 		(p) =>
 			p.name.toLowerCase().includes(q) ||
-			(p.template && p.template.toLowerCase().includes(q)) ||
-			(p.tags && p.tags.some((tag) => tag.toLowerCase().includes(q))),
+			p.template?.toLowerCase().includes(q) ||
+			p.tags?.some((tag) => tag.toLowerCase().includes(q)),
 	);
 }
 

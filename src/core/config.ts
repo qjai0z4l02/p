@@ -10,16 +10,23 @@ import {
 	TEMPLATES_DIR,
 } from "../utils/paths";
 
-function deepMerge<T extends Record<string, any>>(base: T, override: T): T {
-	const result = { ...base } as Record<string, any>;
+function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
+	const result = { ...base } as Record<string, unknown>;
 	for (const key of Object.keys(override)) {
 		const bVal = result[key];
 		const oVal = override[key];
 		if (
-			typeof oVal === "object" && oVal !== null && !Array.isArray(oVal) &&
-			typeof bVal === "object" && bVal !== null && !Array.isArray(bVal)
+			typeof oVal === "object" &&
+			oVal !== null &&
+			!Array.isArray(oVal) &&
+			typeof bVal === "object" &&
+			bVal !== null &&
+			!Array.isArray(bVal)
 		) {
-			result[key] = deepMerge(bVal, oVal);
+			result[key] = deepMerge(
+				bVal as Record<string, unknown>,
+				oVal as Record<string, unknown>,
+			);
 		} else {
 			result[key] = oVal;
 		}
@@ -61,17 +68,18 @@ export function loadConfig(): Config {
 
 	try {
 		const userContent = fse.readFileSync(CONFIG_PATH, "utf-8");
-		const userConfig = parse(userContent) || {};
+		const userConfig = (parse(userContent) || {}) as Record<string, unknown>;
 
 		// 读取默认配置，合并新增的 keys
-		let defaultConfig = {};
+		let defaultConfig: Record<string, unknown> = {};
 		const defaultConfigPath = getDefaultConfigPath();
 		if (defaultConfigPath && fse.existsSync(defaultConfigPath)) {
 			const defaultContent = fse.readFileSync(defaultConfigPath, "utf-8");
-			defaultConfig = parse(defaultContent) || {};
+			defaultConfig = (parse(defaultContent) || {}) as Record<string, unknown>;
 		}
 
-		return deepMerge(defaultConfig, userConfig) as Config;
+		// yaml 解析的动态结构，经 unknown 中转断言为 Config
+		return deepMerge(defaultConfig, userConfig) as unknown as Config;
 	} catch (error) {
 		throw new Error(`配置文件解析失败: ${(error as Error).message}`);
 	}

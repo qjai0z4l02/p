@@ -1,8 +1,8 @@
-import { intro, outro, spinner } from "@clack/prompts";
-import { Command } from "commander";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { existsSync, readFileSync } from "node:fs";
+import { intro, outro, spinner } from "@clack/prompts";
+import { Command } from "commander";
 import pc from "picocolors";
 import { execAndCapture } from "../utils/shell";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
@@ -55,7 +55,10 @@ export const updateCommand = new Command("update")
 
 		// 先删除缓存，再重新安装（解决 Bun 缓存旧 GitHub commit 的问题）
 		await execAndCapture("bun remove -g p", process.cwd());
-		const installResult = await execAndCapture("bun install -g ru-yaka/p", process.cwd());
+		const installResult = await execAndCapture(
+			"bun install -g ru-yaka/p",
+			process.cwd(),
+		);
 
 		if (!installResult.success) {
 			s.stop("更新失败");

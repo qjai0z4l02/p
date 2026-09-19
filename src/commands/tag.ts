@@ -2,13 +2,14 @@ import { intro, isCancel, multiselect, outro, text } from "@clack/prompts";
 import { Command } from "commander";
 import pc from "picocolors";
 
+import { getProjectMeta, listProjects, saveProjectMeta } from "../core/project";
 import {
-	getProjectMeta,
-	listProjects,
-	projectExists,
-	saveProjectMeta,
-} from "../core/project";
-import { bgOrange, brand, printError, printInfo, printSuccess } from "../utils/ui";
+	bgOrange,
+	brand,
+	printError,
+	printInfo,
+	printSuccess,
+} from "../utils/ui";
 
 /**
  * 获取当前目录对应的项目名
@@ -136,9 +137,9 @@ async function listAllTags() {
 
 	const allTags = new Map<string, string[]>();
 	for (const p of tagged) {
-		for (const tag of p.tags!) {
+		for (const tag of p.tags ?? []) {
 			if (!allTags.has(tag)) allTags.set(tag, []);
-			allTags.get(tag)!.push(p.name);
+			allTags.get(tag)?.push(p.name);
 		}
 	}
 
@@ -149,7 +150,7 @@ async function listAllTags() {
 
 	for (const [tag, projectNames] of allTags) {
 		console.log(
-			"  " + pc.magenta(`#${tag}`) + pc.dim(` (${projectNames.length})`),
+			`  ${pc.magenta(`#${tag}`)}${pc.dim(` (${projectNames.length})`)}`,
 		);
 		for (const name of projectNames) {
 			console.log(pc.dim(`    ${name}`));

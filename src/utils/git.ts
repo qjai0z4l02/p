@@ -1,5 +1,5 @@
-import fse from "fs-extra";
 import { join } from "node:path";
+import fse from "fs-extra";
 import { execAndCapture } from "./shell";
 
 /**
@@ -11,7 +11,10 @@ export async function removeNestedGitDirs(cwd: string): Promise<number> {
 	let count = 0;
 
 	// 1. 从磁盘删除嵌套 .git 目录
-	const findResult = await execAndCapture("find . -mindepth 2 -name '.git' -type d", cwd);
+	const findResult = await execAndCapture(
+		"find . -mindepth 2 -name '.git' -type d",
+		cwd,
+	);
 	if (findResult.success) {
 		const dirs = findResult.output.trim().split("\n").filter(Boolean);
 		for (const d of dirs) {
@@ -23,7 +26,10 @@ export async function removeNestedGitDirs(cwd: string): Promise<number> {
 	}
 
 	// 2. 清除 git index 中残留的 gitlink 条目 (mode 160000)
-	const lsResult = await execAndCapture("git ls-files -s | grep '^160000'", cwd);
+	const lsResult = await execAndCapture(
+		"git ls-files -s | grep '^160000'",
+		cwd,
+	);
 	if (lsResult.success) {
 		const gitlinks = lsResult.output.trim().split("\n").filter(Boolean);
 		for (const line of gitlinks) {

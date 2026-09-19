@@ -49,7 +49,10 @@ export function listProjects(): ProjectInfo[] {
 			projects.push({
 				name: entry.name,
 				path: projectPath,
-				template: meta?.template && meta.template !== "empty" ? meta.template : undefined,
+				template:
+					meta?.template && meta.template !== "empty"
+						? meta.template
+						: undefined,
 				savedTemplate: meta?.savedTemplate,
 				createdAt: meta?.createdAt ? new Date(meta.createdAt) : stat.birthtime,
 				modifiedAt: stat.mtime,

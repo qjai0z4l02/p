@@ -2,12 +2,8 @@ import { outro, spinner } from "@clack/prompts";
 import { Command } from "commander";
 import pc from "picocolors";
 
-import {
-	getProjectPath,
-	listProjects,
-	projectExists,
-} from "../core/project";
-import { liveSearch, CANCEL } from "../utils/live-search";
+import { getProjectPath, listProjects, projectExists } from "../core/project";
+import { CANCEL, liveSearch } from "../utils/live-search";
 import { filterProjects, projectHint } from "../utils/project-search";
 import { brand, printError, printInfo } from "../utils/ui";
 

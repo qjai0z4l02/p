@@ -11,15 +11,20 @@ import {
 	saveProjectMeta,
 	validateProjectNameFormat,
 } from "../core/project";
-import { execAndCapture, isTUICommand, openWithIDE } from "../utils/shell";
 import { PROJECTS_DIR } from "../utils/paths";
+import { execAndCapture, isTUICommand, openWithIDE } from "../utils/shell";
 import { brand, printError } from "../utils/ui";
 
 /**
  * 规范化 Git URL：支持 owner/repo 短格式 → 补全为 HTTPS 地址
  */
 function normalizeUrl(input: string): string {
-	if (input.startsWith("https://") || input.startsWith("http://") || input.startsWith("git@") || input.startsWith("ssh://")) {
+	if (
+		input.startsWith("https://") ||
+		input.startsWith("http://") ||
+		input.startsWith("git@") ||
+		input.startsWith("ssh://")
+	) {
 		if (input.startsWith("https://github.com/") && !input.endsWith(".git")) {
 			return `${input}.git`;
 		}
@@ -97,10 +102,11 @@ async function degitClone(
 			const code = await proc.exited;
 			if (code === 0) {
 				// 解压
-				const tarProc = Bun.spawn(
-					["tar", "-xzf", "archive.tar.gz"],
-					{ cwd: tmpDir, stdout: "pipe", stderr: "pipe" },
-				);
+				const tarProc = Bun.spawn(["tar", "-xzf", "archive.tar.gz"], {
+					cwd: tmpDir,
+					stdout: "pipe",
+					stderr: "pipe",
+				});
 				await tarProc.exited;
 
 				// tarball 解压后会有一个 owner-repo-xxxx 前缀的目录
@@ -132,62 +138,100 @@ export const cloneCommand = new Command("clone")
 	.argument("<url>", "Git 仓库地址（支持 owner/repo 短格式）")
 	.argument("[name]", "自定义项目名称（默认从 URL 推断）")
 	.option("--degit", "丢弃 git 历史，仅下载文件（类似 degit）")
-	.action(async (url: string, customName?: string, options?: { degit?: boolean }) => {
-		const config = loadConfig();
+	.action(
+		async (url: string, customName?: string, options?: { degit?: boolean }) => {
+			const config = loadConfig();
 
-		const normalizedUrl = normalizeUrl(url);
-		let projectName = customName || extractProjectName(normalizedUrl);
+			const normalizedUrl = normalizeUrl(url);
+			const projectName = customName || extractProjectName(normalizedUrl);
 
-		const nameCheck = validateProjectNameFormat(projectName);
-		if (!nameCheck.valid) {
-			printError(nameCheck.message || "项目名称无效");
-			process.exit(1);
-		}
+			const nameCheck = validateProjectNameFormat(projectName);
+			if (!nameCheck.valid) {
+				printError(nameCheck.message || "项目名称无效");
+				process.exit(1);
+			}
 
-		if (projectExists(projectName)) {
-			printError(`项目已存在: ${projectName}`);
-			console.log(
-				pc.dim("使用 ") +
-					brand.primary("p open " + projectName) +
-					pc.dim(" 打开已有项目"),
-			);
-			process.exit(1);
-		}
+			if (projectExists(projectName)) {
+				printError(`项目已存在: ${projectName}`);
+				console.log(
+					pc.dim("使用 ") +
+						brand.primary(`p open ${projectName}`) +
+						pc.dim(" 打开已有项目"),
+				);
+				process.exit(1);
+			}
 
-		console.log();
-
-		if (options?.degit) {
-			console.log(pc.dim("  degit 模式：不包含 .git 目录（无历史提交记录）"));
 			console.log();
-		}
 
-		const projectPath = getProjectPath(projectName);
-		const s = spinner();
-		s.start(`正在克隆项目：${projectName}...`);
+			if (options?.degit) {
+				console.log(pc.dim("  degit 模式：不包含 .git 目录（无历史提交记录）"));
+				console.log();
+			}
 
-		if (options?.degit) {
-			// degit 模式
-			const slug = extractSlug(normalizedUrl);
-			if (slug) {
-				// GitHub 仓库 → tarball 下载
-				const result = await degitClone(slug.owner, slug.repo, projectPath, "main");
-				if (!result.success) {
-					// main 失败，试 master
-					const retry = await degitClone(slug.owner, slug.repo, projectPath, "master");
-					if (!retry.success) {
+			const projectPath = getProjectPath(projectName);
+			const s = spinner();
+			s.start(`正在克隆项目：${projectName}...`);
+
+			if (options?.degit) {
+				// degit 模式
+				const slug = extractSlug(normalizedUrl);
+				if (slug) {
+					// GitHub 仓库 → tarball 下载
+					const result = await degitClone(
+						slug.owner,
+						slug.repo,
+						projectPath,
+						"main",
+					);
+					if (!result.success) {
+						// main 失败，试 master
+						const retry = await degitClone(
+							slug.owner,
+							slug.repo,
+							projectPath,
+							"master",
+						);
+						if (!retry.success) {
+							s.stop("克隆失败");
+							console.log();
+							printError("下载失败，请检查仓库地址和权限");
+							console.log(pc.dim("  提示：可去掉 --degit 使用完整 git clone"));
+							process.exit(1);
+						}
+					}
+				} else {
+					// 非 GitHub → shallow clone + 删 .git
+					const result = await execAndCapture(
+						`git clone --depth 1 ${normalizedUrl} ${projectName}`,
+						PROJECTS_DIR,
+					);
+					if (!result.success) {
 						s.stop("克隆失败");
 						console.log();
-						printError("下载失败，请检查仓库地址和权限");
-						console.log(pc.dim("  提示：可去掉 --degit 使用完整 git clone"));
+						printError("git clone 失败，请检查仓库地址和权限");
+						if (result.error) console.log(pc.dim(result.error));
 						process.exit(1);
 					}
+					await fse.remove(resolve(projectPath, ".git")).catch(() => {});
 				}
 			} else {
-				// 非 GitHub → shallow clone + 删 .git
+				// 普通 git clone
+				const owner = extractSlug(normalizedUrl)?.owner ?? null;
+				const gitUser = await getGitUsername();
+
+				if (owner && gitUser && gitUser.toLowerCase() !== owner.toLowerCase()) {
+					console.log(
+						pc.dim(
+							`  ⚠ git 用户 (${gitUser}) 与仓库 owner (${owner}) 不一致，后续 push 请注意远程仓库地址`,
+						),
+					);
+				}
+
 				const result = await execAndCapture(
-					`git clone --depth 1 ${normalizedUrl} ${projectName}`,
+					`git clone ${normalizedUrl} ${projectName}`,
 					PROJECTS_DIR,
 				);
+
 				if (!result.success) {
 					s.stop("克隆失败");
 					console.log();
@@ -195,67 +239,41 @@ export const cloneCommand = new Command("clone")
 					if (result.error) console.log(pc.dim(result.error));
 					process.exit(1);
 				}
-				await fse.remove(resolve(projectPath, ".git")).catch(() => {});
-			}
-		} else {
-			// 普通 git clone
-			const owner = extractSlug(normalizedUrl)?.owner ?? null;
-			const gitUser = await getGitUsername();
-
-			if (owner && gitUser && gitUser.toLowerCase() !== owner.toLowerCase()) {
-				console.log(
-					pc.dim(
-						`  ⚠ git 用户 (${gitUser}) 与仓库 owner (${owner}) 不一致，后续 push 请注意远程仓库地址`,
-					),
-				);
 			}
 
-			const result = await execAndCapture(
-				`git clone ${normalizedUrl} ${projectName}`,
-				PROJECTS_DIR,
-			);
+			s.stop(`${brand.success("✓")} 克隆完成`);
 
-			if (!result.success) {
-				s.stop("克隆失败");
-				console.log();
-				printError("git clone 失败，请检查仓库地址和权限");
-				if (result.error) console.log(pc.dim(result.error));
-				process.exit(1);
+			saveProjectMeta(projectName, { template: "clone" });
+
+			if (isTUICommand(config.ide)) {
+				// TUI（如 claude）先收尾输出，再前台进入会话
+				outro(brand.success("✨ 项目克隆成功！"));
+				try {
+					await openWithIDE(config.ide, projectPath);
+				} catch (error) {
+					printError((error as Error).message);
+					console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+				}
+				return;
 			}
-		}
 
-		s.stop(`${brand.success("✓")} 克隆完成`);
+			const ideSpinner = spinner();
+			ideSpinner.start(`正在用 ${config.ide} 打开 ${projectName}...`);
 
-		saveProjectMeta(projectName, { template: "clone" });
-
-		if (isTUICommand(config.ide)) {
-			// TUI（如 claude）先收尾输出，再前台进入会话
-			outro(brand.success("✨ 项目克隆成功！"));
 			try {
 				await openWithIDE(config.ide, projectPath);
+				ideSpinner.stop(
+					`${brand.success("✓")} 已打开: ${brand.primary(projectName)}`,
+				);
 			} catch (error) {
+				ideSpinner.stop(`打开 ${config.ide} 失败`);
+				console.log();
 				printError((error as Error).message);
+				console.log();
 				console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+				console.log();
 			}
-			return;
-		}
 
-		const ideSpinner = spinner();
-		ideSpinner.start(`正在用 ${config.ide} 打开 ${projectName}...`);
-
-		try {
-			await openWithIDE(config.ide, projectPath);
-			ideSpinner.stop(
-				`${brand.success("✓")} 已打开: ${brand.primary(projectName)}`,
-			);
-		} catch (error) {
-			ideSpinner.stop(`打开 ${config.ide} 失败`);
-			console.log();
-			printError((error as Error).message);
-			console.log();
-			console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
-			console.log();
-		}
-
-		outro(brand.success("✨ 项目克隆成功！"));
-	});
+			outro(brand.success("✨ 项目克隆成功！"));
+		},
+	);

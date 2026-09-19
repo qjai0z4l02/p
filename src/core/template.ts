@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import fse from "fs-extra";
 import pc from "picocolors";
-import type { TemplateConfig, TemplateMeta, TemplatesMeta } from "../types";
+import type { TemplateConfig, TemplatesMeta } from "../types";
 import { TEMPLATES_DIR, TEMPLATES_META_PATH } from "../utils/paths";
 import { execInDir } from "../utils/shell";
 import { brand } from "../utils/ui";

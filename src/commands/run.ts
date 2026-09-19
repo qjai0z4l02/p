@@ -3,13 +3,13 @@ import { Command } from "commander";
 import pc from "picocolors";
 
 import { loadConfig } from "../core/config";
-import { listProjects } from "../core/project";
 import { runHooksByKeys } from "../core/hooks";
+import { listProjects } from "../core/project";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
 export const runCommand = new Command("run")
 	.alias("r")
-		.description("在当前项目执行 hooks")
+	.description("在当前项目执行 hooks")
 	.argument("[hooks...]", "要执行的 hook 名称")
 	.action(async (hookKeys: string[]) => {
 		const config = loadConfig();
@@ -44,23 +44,18 @@ export const runCommand = new Command("run")
 			const invalid = hookKeys.filter((k) => !config.hooks[k]);
 			if (invalid.length > 0) {
 				printError(`未知的 hook: ${invalid.join(", ")}`);
-				console.log(
-					pc.dim(`  可用 hooks: ${allHookKeys.join(", ")}`),
-				);
+				console.log(pc.dim(`  可用 hooks: ${allHookKeys.join(", ")}`));
 				process.exit(1);
 			}
 
-			await runHooksByKeys(
-				config,
-				hookKeys,
-				currentDir,
-				currentProject.name,
-			);
+			await runHooksByKeys(config, hookKeys, currentDir, currentProject.name);
 
 			console.log();
 			console.log(
 				brand.success("✓") +
-					pc.dim(` 已在 ${brand.primary(currentProject.name)} 执行 ${hookKeys.length} 个 hook`),
+					pc.dim(
+						` 已在 ${brand.primary(currentProject.name)} 执行 ${hookKeys.length} 个 hook`,
+					),
 			);
 			return;
 		}

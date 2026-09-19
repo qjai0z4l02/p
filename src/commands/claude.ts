@@ -2,12 +2,8 @@ import { outro, spinner } from "@clack/prompts";
 import { Command } from "commander";
 import pc from "picocolors";
 
-import {
-	getProjectPath,
-	listProjects,
-	projectExists,
-} from "../core/project";
-import { liveSearch, CANCEL } from "../utils/live-search";
+import { getProjectPath, listProjects, projectExists } from "../core/project";
+import { CANCEL, liveSearch } from "../utils/live-search";
 import { filterProjects, projectHint } from "../utils/project-search";
 import { brand, printError, printInfo } from "../utils/ui";
 
@@ -106,7 +102,9 @@ export const claudeCommand = new Command("claude")
 
 		const s = spinner();
 		s.start(`正在启动 Claude Code: ${brand.primary(projectName)}`);
-		s.stop(`${brand.success("✓")} ${brand.primary("claude")} ${pc.dim(`— ${projectName}`)}`);
+		s.stop(
+			`${brand.success("✓")} ${brand.primary("claude")} ${pc.dim(`— ${projectName}`)}`,
+		);
 		console.log();
 
 		const proc = Bun.spawn(["claude", "--dangerously-skip-permissions"], {

@@ -1,4 +1,3 @@
-import { $ } from "bun";
 import {
 	existsSync,
 	readdirSync,
@@ -7,6 +6,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { $ } from "bun";
 import pc from "picocolors";
 import { P_ROOT } from "./paths";
 import { brand } from "./ui";
@@ -213,9 +213,8 @@ function resolveCommand(prefix: string): string {
 		try {
 			const files = readdirSync(dir);
 			for (const file of files) {
-				const name = isWindows && file.endsWith(".exe")
-					? file.slice(0, -4)
-					: file;
+				const name =
+					isWindows && file.endsWith(".exe") ? file.slice(0, -4) : file;
 				if (name.startsWith(prefix)) {
 					candidates.push(name);
 				}
@@ -254,15 +253,30 @@ export async function commandExists(command: string): Promise<boolean> {
  */
 export async function moveToTrash(path: string): Promise<boolean> {
 	if (process.platform === "darwin") {
-		const proc = Bun.spawn(["osascript", "-e", `tell application "Finder" to move POSIX file "${path}" to trash`], {
-			stdio: ["pipe", "pipe", "pipe"],
-		});
+		const proc = Bun.spawn(
+			[
+				"osascript",
+				"-e",
+				`tell application "Finder" to move POSIX file "${path}" to trash`,
+			],
+			{
+				stdio: ["pipe", "pipe", "pipe"],
+			},
+		);
 		return (await proc.exited) === 0;
 	}
 
 	const trashCmds = ["gio trash", "trash-put", "trash"];
 	for (const cmd of trashCmds) {
-		if (await commandExists(cmd === "gio trash" ? "gio" : cmd === "trash-put" ? "trash-put" : "trash")) {
+		if (
+			await commandExists(
+				cmd === "gio trash"
+					? "gio"
+					: cmd === "trash-put"
+						? "trash-put"
+						: "trash",
+			)
+		) {
 			const args = cmd === "gio trash" ? ["trash", path] : [path];
 			const bin = cmd === "gio trash" ? "gio" : cmd;
 			const proc = Bun.spawn([bin, ...args], {

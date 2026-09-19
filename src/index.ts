@@ -1,12 +1,13 @@
 #!/usr/bin/env bun
-import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Command } from "commander";
+import pc from "picocolors";
 import { addCommand } from "./commands/add";
+import { cdCommand } from "./commands/cd";
 import { claudeCommand } from "./commands/claude";
 import { cloneCommand } from "./commands/clone";
-import { cdCommand } from "./commands/cd";
 import { configCommand } from "./commands/config";
 import { copyCommand } from "./commands/copy";
 import { deleteCommand } from "./commands/delete";
@@ -16,13 +17,13 @@ import { lsCommand } from "./commands/ls";
 import { metaCommand } from "./commands/meta";
 import { newCommand } from "./commands/new";
 import { noteCommand } from "./commands/note";
-import { publishCommand } from "./commands/publish";
-import { pushCommand } from "./commands/push";
 import { openCommand } from "./commands/open";
 import { pathCommand } from "./commands/path";
 import { projectCommand } from "./commands/project";
-import { renameCommand } from "./commands/rename";
+import { publishCommand } from "./commands/publish";
+import { pushCommand } from "./commands/push";
 import { recentCommand } from "./commands/recent";
+import { renameCommand } from "./commands/rename";
 import { runCommand } from "./commands/run";
 import { syncCommand } from "./commands/sync";
 import { tagCommand } from "./commands/tag";
@@ -31,7 +32,6 @@ import { unzipCommand } from "./commands/unzip";
 import { updateCommand } from "./commands/update";
 import { ensureInitialized } from "./core/config";
 import { brand } from "./utils/ui";
-import pc from "picocolors";
 
 // 读取版本号
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -50,12 +50,14 @@ program
 
 // 显示所有 alias，长的排左边，短的排右边
 const Help = (await import("commander")).Help;
-Help.prototype.subcommandTerm = function (cmd: any) {
+// biome-ignore lint/suspicious/noExplicitAny: commander 的 prototype 签名缺类型导出
+Help.prototype.subcommandTerm = (cmd: any) => {
 	const all = [cmd.name(), ...cmd.aliases()];
 	all.sort((a: string, b: string) => b.length - a.length);
 	return all.join("|");
 };
 const origFormatHelp = Help.prototype.formatHelp;
+// biome-ignore lint/suspicious/noExplicitAny: 同上，覆写 commander 内部方法需匹配原签名
 Help.prototype.formatHelp = function (cmd: any, helper: any) {
 	let output = origFormatHelp.call(this, cmd, helper);
 	output += `\n  ${pc.dim("查看子命令详情:")} p ${pc.cyan("<command>")} -h\n`;

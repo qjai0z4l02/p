@@ -1,4 +1,4 @@
-import { basename, dirname, join, parse } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { confirm, intro, outro, spinner } from "@clack/prompts";
 import AdmZip from "adm-zip";
 import { Command } from "commander";
@@ -48,14 +48,14 @@ function detectCommonPrefixes(names: string[]): string[] {
 }
 
 function stripPrefix(name: string, prefix: string): string {
-	if (name.startsWith(prefix + "-")) {
+	if (name.startsWith(`${prefix}-`)) {
 		return name.slice(prefix.length + 1);
 	}
 	return name;
 }
 
 function stripSuffix(name: string, suffix: string): string {
-	if (name.endsWith("-" + suffix)) {
+	if (name.endsWith(`-${suffix}`)) {
 		return name.slice(0, name.length - suffix.length - 1);
 	}
 	return name;
@@ -190,7 +190,7 @@ export const unzipCommand = new Command("unzip")
 		const errors: string[] = [];
 
 		for (const { file: zipFile, internalName, finalName } of zipInfos) {
-			const relativePath = truncateHash(internalName) + ".zip";
+			const relativePath = `${truncateHash(internalName)}.zip`;
 			try {
 				const destDir = join(dirname(zipFile), finalName);
 
@@ -224,7 +224,7 @@ export const unzipCommand = new Command("unzip")
 				if (rootDirs.size === 1) {
 					const root = [...rootDirs][0];
 					if (root === internalName || root === finalName) {
-						stripPrefix = root + "/";
+						stripPrefix = `${root}/`;
 					}
 				}
 
@@ -265,7 +265,7 @@ export const unzipCommand = new Command("unzip")
 		console.log();
 		if (errors.length > 0) {
 			outro(
-				`${brand.success("✓")} 成功解压 ${successCount} 个，${brand.error(errors.length + " 个失败")}`,
+				`${brand.success("✓")} 成功解压 ${successCount} 个，${brand.error(`${errors.length} 个失败`)}`,
 			);
 		} else {
 			outro(`${brand.success("✓")} 已成功解压 ${successCount} 个 zip 文件`);

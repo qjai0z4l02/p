@@ -1,23 +1,30 @@
 import { resolve } from "node:path";
-import { confirm, intro, isCancel, outro, select, spinner, text } from "@clack/prompts";
+import {
+	confirm,
+	intro,
+	isCancel,
+	outro,
+	select,
+	spinner,
+	text,
+} from "@clack/prompts";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
 
 import { loadConfig } from "../core/config";
-import { getProjectMeta, getProjectPath, listProjects, projectExists, saveProjectMeta } from "../core/project";
+import {
+	getProjectPath,
+	listProjects,
+	projectExists,
+	saveProjectMeta,
+} from "../core/project";
 import { markTemplatePublished } from "../core/template";
 import { collectProjectFiles, copyFiles } from "../utils/files";
-import { liveSearch, CANCEL } from "../utils/live-search";
+import { CANCEL, liveSearch } from "../utils/live-search";
 import { TEMPLATES_DIR } from "../utils/paths";
-import {
-	commandExists,
-	execAndCapture,
-	execInDir,
-	isTUICommand,
-	openWithIDE,
-} from "../utils/shell";
 import { filterProjects } from "../utils/project-search";
+import { execAndCapture, isTUICommand, openWithIDE } from "../utils/shell";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
 /**
@@ -109,18 +116,34 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 
 	// 如果没有指定目标，且当前目录是项目，默认使用当前项目
 	if (!target && currentProject) {
-		const templateName = await resolveTemplateName(currentProject, templateNameArg);
+		const templateName = await resolveTemplateName(
+			currentProject,
+			templateNameArg,
+		);
 		if (!templateName) return;
-		await createOrUpdateTemplate(currentDir, templateName, !!currentProject.savedTemplate && currentProject.savedTemplate === templateName);
+		await createOrUpdateTemplate(
+			currentDir,
+			templateName,
+			!!currentProject.savedTemplate &&
+				currentProject.savedTemplate === templateName,
+		);
 		saveSavedTemplate(currentProject.name, templateName);
 		return;
 	}
 
 	// 处理当前目录（显式指定 .）
 	if (target === ".") {
-		const templateName = await resolveTemplateName(currentProject, templateNameArg);
+		const templateName = await resolveTemplateName(
+			currentProject,
+			templateNameArg,
+		);
 		if (!templateName) return;
-		await createOrUpdateTemplate(currentDir, templateName, !!currentProject?.savedTemplate && currentProject.savedTemplate === templateName);
+		await createOrUpdateTemplate(
+			currentDir,
+			templateName,
+			!!currentProject?.savedTemplate &&
+				currentProject.savedTemplate === templateName,
+		);
 		if (currentProject) saveSavedTemplate(currentProject.name, templateName);
 		return;
 	}
@@ -133,7 +156,6 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 		console.log();
 		return;
 	}
-
 
 	let selectedProject = target;
 	const options = buildTemplateOptions(projects);
@@ -203,7 +225,11 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 	const project = projects.find((p) => p.name === selectedProject);
 	const templateName = await resolveTemplateName(project, templateNameArg);
 	if (!templateName) return;
-	await createOrUpdateTemplate(sourcePath, templateName, !!project?.savedTemplate && project.savedTemplate === templateName);
+	await createOrUpdateTemplate(
+		sourcePath,
+		templateName,
+		!!project?.savedTemplate && project.savedTemplate === templateName,
+	);
 	if (project) saveSavedTemplate(project.name, templateName);
 }
 
@@ -235,8 +261,7 @@ async function resolveTemplateName(
 			pc.dim("  当前项目已保存为模板: ") + brand.primary(project.savedTemplate),
 		);
 		console.log(
-			pc.dim("  下次可直接运行: ") +
-				brand.primary(`p templates update .`),
+			pc.dim("  下次可直接运行: ") + brand.primary(`p templates update .`),
 		);
 		console.log();
 
@@ -279,7 +304,11 @@ async function handleUpdate(target?: string) {
 
 	// 如果没有指定目标，且当前目录是项目，默认更新当前项目的模板
 	if (!target && currentProject?.savedTemplate) {
-		await createOrUpdateTemplate(currentDir, currentProject.savedTemplate, true);
+		await createOrUpdateTemplate(
+			currentDir,
+			currentProject.savedTemplate,
+			true,
+		);
 		return;
 	}
 
@@ -295,7 +324,11 @@ async function handleUpdate(target?: string) {
 			process.exit(1);
 		}
 
-		await createOrUpdateTemplate(currentDir, currentProject.savedTemplate, true);
+		await createOrUpdateTemplate(
+			currentDir,
+			currentProject.savedTemplate,
+			true,
+		);
 		return;
 	}
 
@@ -347,9 +380,7 @@ async function handleUpdate(target?: string) {
 		await createOrUpdateTemplate(project.path, selectedTemplate, true);
 	} else {
 		printError(`找不到使用模板 ${selectedTemplate} 的项目`);
-		console.log(
-			pc.dim("  模板目录: ") + pc.underline(templatePath),
-		);
+		console.log(pc.dim("  模板目录: ") + pc.underline(templatePath));
 		process.exit(1);
 	}
 }
@@ -393,7 +424,11 @@ async function handlePublish(nameArg?: string, templateNameArg?: string) {
 		}
 
 		if (needSave) {
-			await createOrUpdateTemplate(currentDir, templateName, await templateExists(templateName));
+			await createOrUpdateTemplate(
+				currentDir,
+				templateName,
+				await templateExists(templateName),
+			);
 			if (currentProject) saveSavedTemplate(currentProject.name, templateName);
 		}
 
@@ -424,7 +459,9 @@ async function handlePublish(nameArg?: string, templateNameArg?: string) {
 
 	if (nameArg) {
 		const lower = nameArg.toLowerCase();
-		const matched = localTemplates.filter((t) => t.toLowerCase().includes(lower));
+		const matched = localTemplates.filter((t) =>
+			t.toLowerCase().includes(lower),
+		);
 		if (matched.length === 1) {
 			selectedTemplate = matched[0];
 		} else if (matched.length > 1) {
@@ -446,7 +483,9 @@ async function handlePublish(nameArg?: string, templateNameArg?: string) {
 			options,
 			filterFn: (query: string) => {
 				if (!query) return options;
-				return options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()));
+				return options.filter((o) =>
+					o.label.toLowerCase().includes(query.toLowerCase()),
+				);
 			},
 		});
 
@@ -467,9 +506,14 @@ async function doPublish(selectedTemplate: string) {
 	// 提前检测远程仓库是否已存在
 	const checkSpinner = spinner();
 	checkSpinner.start("正在检查远程仓库...");
-	const repoCheck = await execAndCapture(`gh repo view ${selectedTemplate} --json name`, process.cwd());
+	const repoCheck = await execAndCapture(
+		`gh repo view ${selectedTemplate} --json name`,
+		process.cwd(),
+	);
 	const remoteExists = repoCheck.success;
-	checkSpinner.stop(`${brand.success("✓")} ${remoteExists ? "远程仓库已存在" : "新仓库"}`);
+	checkSpinner.stop(
+		`${brand.success("✓")} ${remoteExists ? "远程仓库已存在" : "新仓库"}`,
+	);
 
 	intro(remoteExists ? bgOrange(" 更新模板 ") : bgOrange(" 发布模板 "));
 
@@ -487,7 +531,15 @@ async function doPublish(selectedTemplate: string) {
 	s.start(remoteExists ? "正在推送到远程仓库..." : "正在创建 GitHub 仓库...");
 
 	const proc = Bun.spawn(
-		["gh", "repo", "create", selectedTemplate, "--public", "--description", `p template: ${selectedTemplate}`],
+		[
+			"gh",
+			"repo",
+			"create",
+			selectedTemplate,
+			"--public",
+			"--description",
+			`p template: ${selectedTemplate}`,
+		],
 		{ cwd: process.cwd(), stdout: "pipe", stderr: "pipe" },
 	);
 	const exitCode = await proc.exited;
@@ -501,7 +553,10 @@ async function doPublish(selectedTemplate: string) {
 	if (urlMatch) {
 		owner = urlMatch[1];
 	} else {
-		const whoami = await execAndCapture("gh api user --jq .login", process.cwd());
+		const whoami = await execAndCapture(
+			"gh api user --jq .login",
+			process.cwd(),
+		);
 		owner = whoami.success ? whoami.output.trim() : "";
 	}
 
@@ -524,9 +579,13 @@ async function doPublish(selectedTemplate: string) {
 	const cloneUrl = `https://github.com/${owner}/${selectedTemplate}.git`;
 
 	if (exitCode === 0) {
-		s.stop(`${brand.success("✓")} 仓库已创建: ${brand.primary(`${owner}/${selectedTemplate}`)} (public)`);
+		s.stop(
+			`${brand.success("✓")} 仓库已创建: ${brand.primary(`${owner}/${selectedTemplate}`)} (public)`,
+		);
 	} else {
-		s.stop(`${brand.success("✓")} 仓库已存在: ${brand.primary(`${owner}/${selectedTemplate}`)}，将更新内容`);
+		s.stop(
+			`${brand.success("✓")} 仓库已存在: ${brand.primary(`${owner}/${selectedTemplate}`)}，将更新内容`,
+		);
 	}
 
 	const pushSpinner = spinner();
@@ -589,7 +648,9 @@ async function doPublish(selectedTemplate: string) {
 	await cleanupGitDir(templatePath);
 
 	const fileCount = await countFiles(templatePath);
-	pushSpinner.stop(`${brand.success("✓")} 已推送 ${brand.primary(fileCount.toString())} 个文件`);
+	pushSpinner.stop(
+		`${brand.success("✓")} 已推送 ${brand.primary(fileCount.toString())} 个文件`,
+	);
 
 	markTemplatePublished(selectedTemplate, owner, selectedTemplate);
 
@@ -632,9 +693,7 @@ async function createOrUpdateTemplate(
 	}
 
 	const copySpinner = spinner();
-	copySpinner.start(
-		isUpdate ? "正在更新模板..." : "正在复制文件到模板目录...",
-	);
+	copySpinner.start(isUpdate ? "正在更新模板..." : "正在复制文件到模板目录...");
 
 	try {
 		await copyFiles(sourcePath, targetPath, files);

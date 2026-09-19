@@ -17,11 +17,8 @@ import {
 	listProjects,
 	projectExists,
 } from "../core/project";
-import { liveSearch, CANCEL } from "../utils/live-search";
-import {
-	filterProjects,
-	projectHint,
-} from "../utils/project-search";
+import { CANCEL, liveSearch } from "../utils/live-search";
+import { filterProjects, projectHint } from "../utils/project-search";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
 /**
@@ -65,7 +62,10 @@ async function searchAndSelectDelete(
 /**
  * 通配符匹配项目名
  */
-function wildcardMatch(projects: ReturnType<typeof listProjects>, pattern: string): string[] {
+function wildcardMatch(
+	projects: ReturnType<typeof listProjects>,
+	pattern: string,
+): string[] {
 	const regexStr = `^${pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`;
 	const regex = new RegExp(regexStr, "i");
 	return projects.filter((p) => regex.test(p.name)).map((p) => p.name);

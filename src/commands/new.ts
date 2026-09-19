@@ -18,7 +18,6 @@ import { runHooks } from "../core/hooks";
 import {
 	getProjectPath,
 	listProjects,
-	projectExists,
 	saveProjectMeta,
 	validateProjectName,
 } from "../core/project";
@@ -39,7 +38,7 @@ import {
 } from "../utils/shell";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
-const REGENERATE = Symbol("regenerate");
+const _REGENERATE = Symbol("regenerate");
 
 export const newCommand = new Command("new")
 	.alias("n")
@@ -270,7 +269,7 @@ export const newCommand = new Command("new")
 				// 验证项目名称
 				const validation = validateProjectName(cleanName);
 				if (!validation.valid) {
-					printError(validation.message!);
+					printError(validation.message ?? "项目名称无效");
 					process.exit(1);
 				}
 
@@ -341,9 +340,11 @@ export const newCommand = new Command("new")
 
 			// AI 命名模式
 			if (options?.desc) {
+				const desc = options.desc;
+
 				// Debug 模式：只输出调试信息，不进入选择流程
 				if (options?.debug) {
-					await generateProjectNames(options.desc, { debug: true });
+					await generateProjectNames(desc, { debug: true });
 					return;
 				}
 
@@ -363,7 +364,7 @@ export const newCommand = new Command("new")
 							linesPrinted = 0;
 						}
 
-						const result = await generateProjectNames(options.desc!, {
+						const result = await generateProjectNames(desc, {
 							onName: (name) => {
 								console.log(`  ${brand.secondary("│")} ${brand.primary(name)}`);
 								linesPrinted++;
@@ -471,7 +472,7 @@ export const newCommand = new Command("new")
 				// 验证项目名称（命令行传入或 AI 命名）
 				const validation = validateProjectName(projectName);
 				if (!validation.valid) {
-					printError(validation.message!);
+					printError(validation.message ?? "项目名称无效");
 					process.exit(1);
 				}
 			}

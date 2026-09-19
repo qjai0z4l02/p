@@ -34,7 +34,9 @@ export const pathCommand = new Command("path")
 			if (filtered.length > 1) {
 				printError(`匹配到 ${filtered.length} 个项目，请精确指定:`);
 				for (const p of filtered) {
-					console.error(`  ${brand.secondary("•")} ${p.name} ${projectHint(p)}`);
+					console.error(
+						`  ${brand.secondary("•")} ${p.name} ${projectHint(p)}`,
+					);
 				}
 				process.exit(1);
 			}

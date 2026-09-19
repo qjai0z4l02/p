@@ -1,22 +1,28 @@
 import { homedir } from "node:os";
-import { basename, join, resolve } from "node:path";
-import { confirm, intro, isCancel, outro, spinner, text } from "@clack/prompts";
+import { basename, join } from "node:path";
+import { confirm, intro, isCancel, outro, spinner } from "@clack/prompts";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
 
-import { listProjects, getProjectPath, saveProjectMeta } from "../core/project";
+import { getProjectPath, listProjects, saveProjectMeta } from "../core/project";
 import { markTemplatePublished } from "../core/template";
-import { removeNestedGitDirs } from "../utils/git";
 import { collectProjectFiles, copyFiles } from "../utils/files";
-import { liveSearch, CANCEL } from "../utils/live-search";
-import { filterProjects } from "../utils/project-search";
+import { removeNestedGitDirs } from "../utils/git";
 import { TEMPLATES_DIR } from "../utils/paths";
+import { filterProjects } from "../utils/project-search";
 import { execAndCapture } from "../utils/shell";
-import { bgOrange, brand, printError, printInfo } from "../utils/ui";
+import { bgOrange, brand, printError } from "../utils/ui";
 
-async function git(args: string[], cwd: string): Promise<{ ok: boolean; output: string }> {
-	const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+async function git(
+	args: string[],
+	cwd: string,
+): Promise<{ ok: boolean; output: string }> {
+	const proc = Bun.spawn(["git", ...args], {
+		cwd,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
 	const code = await proc.exited;
 	const out = await new Response(proc.stdout).text();
 	const err = await new Response(proc.stderr).text();
@@ -89,12 +95,19 @@ async function publishWithRemote(projectPath: string, templateName: string) {
 	markTemplatePublished(templateName, owner, cleanRepo);
 
 	console.log();
-	console.log(pc.dim("  克隆链接: ") + pc.underline(`https://github.com/${owner}/${cleanRepo}.git`));
+	console.log(
+		pc.dim("  克隆链接: ") +
+			pc.underline(`https://github.com/${owner}/${cleanRepo}.git`),
+	);
 	console.log();
 	return true;
 }
 
-async function publishNewRepo(projectPath: string, templateName: string, saveAsLocal: boolean) {
+async function publishNewRepo(
+	projectPath: string,
+	templateName: string,
+	saveAsLocal: boolean,
+) {
 	intro(bgOrange(" 发布模板 "));
 	console.log(pc.dim("  模板: ") + brand.primary(templateName));
 	console.log();
@@ -153,7 +166,15 @@ async function publishNewRepo(projectPath: string, templateName: string, saveAsL
 
 	// gh repo create
 	const proc = Bun.spawn(
-		["gh", "repo", "create", templateName, "--public", "--description", `p template: ${templateName}`],
+		[
+			"gh",
+			"repo",
+			"create",
+			templateName,
+			"--public",
+			"--description",
+			`p template: ${templateName}`,
+		],
 		{ cwd: process.cwd(), stdout: "pipe", stderr: "pipe" },
 	);
 	const exitCode = await proc.exited;
@@ -166,7 +187,10 @@ async function publishNewRepo(projectPath: string, templateName: string, saveAsL
 	if (urlMatch) {
 		owner = urlMatch[1];
 	} else {
-		const whoami = await execAndCapture("gh api user --jq .login", process.cwd());
+		const whoami = await execAndCapture(
+			"gh api user --jq .login",
+			process.cwd(),
+		);
 		owner = whoami.success ? whoami.output.trim() : "";
 	}
 
@@ -187,9 +211,13 @@ async function publishNewRepo(projectPath: string, templateName: string, saveAsL
 	const cloneUrl = `https://github.com/${owner}/${templateName}.git`;
 
 	if (exitCode === 0) {
-		sCreate.stop(`${brand.success("✓")} 仓库已创建: ${brand.primary(`${owner}/${templateName}`)}`);
+		sCreate.stop(
+			`${brand.success("✓")} 仓库已创建: ${brand.primary(`${owner}/${templateName}`)}`,
+		);
 	} else {
-		sCreate.stop(`${brand.success("✓")} 仓库已存在: ${brand.primary(`${owner}/${templateName}`)}`);
+		sCreate.stop(
+			`${brand.success("✓")} 仓库已存在: ${brand.primary(`${owner}/${templateName}`)}`,
+		);
 	}
 
 	const sPush = spinner();
@@ -204,10 +232,16 @@ async function publishNewRepo(projectPath: string, templateName: string, saveAsL
 	const branchResult = await git(["branch", "--show-current"], tmpDir);
 	const branch = branchResult.output.trim() || "main";
 
-	let pushResult = await git(["push", "-u", "--force", "origin", branch], tmpDir);
+	let pushResult = await git(
+		["push", "-u", "--force", "origin", branch],
+		tmpDir,
+	);
 	if (!pushResult.ok && branch === "main") {
 		await git(["branch", "-M", "master"], tmpDir);
-		pushResult = await git(["push", "-u", "--force", "origin", "master"], tmpDir);
+		pushResult = await git(
+			["push", "-u", "--force", "origin", "master"],
+			tmpDir,
+		);
 	}
 
 	if (!pushResult.ok) {
@@ -222,7 +256,9 @@ async function publishNewRepo(projectPath: string, templateName: string, saveAsL
 
 	markTemplatePublished(templateName, owner, templateName);
 
-	sPush.stop(`${brand.success("✓")} 已推送 ${brand.primary(files.length.toString())} 个文件`);
+	sPush.stop(
+		`${brand.success("✓")} 已推送 ${brand.primary(files.length.toString())} 个文件`,
+	);
 
 	if (saveAsLocal) {
 		const projects = listProjects();
@@ -242,48 +278,54 @@ export const publishCommand = new Command("publish")
 	.argument("[name]", "项目名称或 . 表示当前目录")
 	.argument("[template-name]", "模板名称（不指定则使用项目名）")
 	.option("--save", "同时保存为本地模板")
-	.action(async (name?: string, templateNameArg?: string, options?: { save?: boolean }) => {
-		let projectPath: string;
-		let projectName: string;
+	.action(
+		async (
+			name?: string,
+			templateNameArg?: string,
+			options?: { save?: boolean },
+		) => {
+			let projectPath: string;
+			let projectName: string;
 
-		if (name === ".") {
-			projectPath = process.cwd();
-			projectName = basename(projectPath);
-		} else if (name) {
-			const projects = listProjects();
-			if (!projects.find((p) => p.name === name)) {
-				const filtered = filterProjects(projects, name);
-				if (filtered.length === 1) {
-					projectName = filtered[0].name;
-				} else {
-					printError(`项目不存在: ${name}`);
-					process.exit(1);
-				}
-			} else {
-				projectName = name;
-			}
-			projectPath = getProjectPath(projectName);
-		} else {
-			const projects = listProjects();
-			const currentProject = projects.find((p) => p.path === process.cwd());
-			if (currentProject) {
-				projectPath = currentProject.path;
-				projectName = currentProject.name;
-			} else {
+			if (name === ".") {
 				projectPath = process.cwd();
 				projectName = basename(projectPath);
+			} else if (name) {
+				const projects = listProjects();
+				if (!projects.find((p) => p.name === name)) {
+					const filtered = filterProjects(projects, name);
+					if (filtered.length === 1) {
+						projectName = filtered[0].name;
+					} else {
+						printError(`项目不存在: ${name}`);
+						process.exit(1);
+					}
+				} else {
+					projectName = name;
+				}
+				projectPath = getProjectPath(projectName);
+			} else {
+				const projects = listProjects();
+				const currentProject = projects.find((p) => p.path === process.cwd());
+				if (currentProject) {
+					projectPath = currentProject.path;
+					projectName = currentProject.name;
+				} else {
+					projectPath = process.cwd();
+					projectName = basename(projectPath);
+				}
 			}
-		}
 
-		const templateName = templateNameArg || projectName;
+			const templateName = templateNameArg || projectName;
 
-		// 检查是否有 git remote
-		const hasRemote = await getGitRemoteUrl(projectPath);
-		if (hasRemote) {
-			const handled = await publishWithRemote(projectPath, templateName);
-			if (handled) return;
-		}
+			// 检查是否有 git remote
+			const hasRemote = await getGitRemoteUrl(projectPath);
+			if (hasRemote) {
+				const handled = await publishWithRemote(projectPath, templateName);
+				if (handled) return;
+			}
 
-		// 无 remote → 创建新仓库
-		await publishNewRepo(projectPath, templateName, !!options?.save);
-	});
+			// 无 remote → 创建新仓库
+			await publishNewRepo(projectPath, templateName, !!options?.save);
+		},
+	);

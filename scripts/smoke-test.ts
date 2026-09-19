@@ -7,8 +7,6 @@
  *   bun run scripts/smoke-test.ts --remote  # 从远程安装测试（push 后验证）
  */
 
-const isRemote = process.argv.includes("--remote");
-
 async function run(cmd: string): Promise<{ ok: boolean; output: string }> {
 	try {
 		const proc = Bun.spawn(["bash", "-c", cmd], {
@@ -64,11 +62,19 @@ for (const test of tests) {
 
 	let testPassed = ok;
 
-	if (testPassed && test.expectInOutput && !output.includes(test.expectInOutput)) {
+	if (
+		testPassed &&
+		test.expectInOutput &&
+		!output.includes(test.expectInOutput)
+	) {
 		testPassed = false;
 	}
 
-	if (testPassed && test.rejectInOutput && output.includes(test.rejectInOutput)) {
+	if (
+		testPassed &&
+		test.rejectInOutput &&
+		output.includes(test.rejectInOutput)
+	) {
 		testPassed = false;
 	}
 

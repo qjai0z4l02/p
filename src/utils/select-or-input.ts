@@ -2,7 +2,7 @@ import * as readline from "node:readline";
 import { Writable } from "node:stream";
 import pc from "picocolors";
 // @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
-import { cursor as ansiCursor, erase } from "sisteransi";
+import { cursor as ansiCursor } from "sisteransi";
 
 import { brand } from "./ui";
 
@@ -110,7 +110,8 @@ export async function selectOrInput(
 		} else {
 			for (let i = 0; i < visible.length; i++) {
 				const idx = state.scrollOffset + i;
-				const isSelected = idx === state.selectedIndex && state.mode === "select";
+				const isSelected =
+					idx === state.selectedIndex && state.mode === "select";
 				const item = visible[i];
 				const marker = isSelected ? brand.primary("◉") : pc.dim("○");
 				const label = isSelected ? brand.bold(item.label) : item.label;
@@ -122,7 +123,9 @@ export async function selectOrInput(
 		// 滚动指示
 		const remaining = opts.options.length - state.scrollOffset - MAX_VISIBLE;
 		if (remaining > 0) {
-			lines.push(`  ${brand.secondary("│")}   ${pc.dim(`... 还有 ${remaining} 个`)}`);
+			lines.push(
+				`  ${brand.secondary("│")}   ${pc.dim(`... 还有 ${remaining} 个`)}`,
+			);
 		}
 
 		// 底部提示
@@ -131,7 +134,7 @@ export async function selectOrInput(
 		);
 
 		for (const line of lines) {
-			parts.push(line + "\x1b[K\n");
+			parts.push(`${line}\x1b[K\n`);
 		}
 
 		if (blockHeight > lines.length) {
@@ -180,7 +183,9 @@ export async function selectOrInput(
 				parts.push("\x1b[K\n");
 			}
 			parts.push(ansiCursor.up(blockHeight));
-			parts.push(`  ${brand.secondary("◆")} ${opts.message} ${pc.dim("已取消")}\n`);
+			parts.push(
+				`  ${brand.secondary("◆")} ${opts.message} ${pc.dim("已取消")}\n`,
+			);
 			stdout.write(parts.join(""));
 			cleanup();
 			resolve(CANCEL);

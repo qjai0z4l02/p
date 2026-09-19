@@ -1,8 +1,15 @@
 import { homedir } from "node:os";
-import { basename, join, resolve, dirname } from "node:path";
-import { confirm, intro, isCancel, multiselect, outro, spinner } from "@clack/prompts";
-import { Command } from "commander";
+import { basename, dirname, join, resolve } from "node:path";
+import {
+	confirm,
+	intro,
+	isCancel,
+	multiselect,
+	outro,
+	spinner,
+} from "@clack/prompts";
 import AdmZip from "adm-zip";
+import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
 
@@ -13,10 +20,10 @@ import {
 	projectExists,
 	saveProjectMeta,
 } from "../core/project";
-import { execAndCapture } from "../utils/shell";
-import { liveSearch, CANCEL } from "../utils/live-search";
-import { filterProjects, projectHint } from "../utils/project-search";
+import { CANCEL, liveSearch } from "../utils/live-search";
 import { PROJECTS_DIR } from "../utils/paths";
+import { filterProjects, projectHint } from "../utils/project-search";
+import { execAndCapture } from "../utils/shell";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
 const DEFAULT_SYNC_EXCLUDES = [
@@ -161,7 +168,11 @@ async function scanDownloadsDir(): Promise<
 	return zips;
 }
 
-function shouldExclude(name: string, relPath: string, excludes: string[]): boolean {
+function shouldExclude(
+	name: string,
+	relPath: string,
+	excludes: string[],
+): boolean {
 	for (const pattern of excludes) {
 		if (pattern.includes("*")) {
 			const regex = new RegExp(
@@ -280,7 +291,9 @@ async function handleExport(name?: string) {
 			projectPath,
 		);
 		const envFiles = envResult.success
-			? envResult.output.split("\n").filter((f) => f.trim() && !gitFiles.includes(f))
+			? envResult.output
+					.split("\n")
+					.filter((f) => f.trim() && !gitFiles.includes(f))
 			: [];
 
 		files = [...gitFiles, ...envFiles];
@@ -309,9 +322,13 @@ async function handleExport(name?: string) {
 	const tmpStat = await fse.stat(tmpZip);
 	const sizeMB = (tmpStat.size / 1024 / 1024).toFixed(1);
 	await (process.platform === "darwin"
-		? execAndCapture(`mkdir -p "${syncDir}" && mv "${tmpZip}" "${zipPath}"`, process.cwd())
-		: (fse.ensureDir(syncDir).then(() => fse.move(tmpZip, zipPath, { overwrite: true }))));
-
+		? execAndCapture(
+				`mkdir -p "${syncDir}" && mv "${tmpZip}" "${zipPath}"`,
+				process.cwd(),
+			)
+		: fse
+				.ensureDir(syncDir)
+				.then(() => fse.move(tmpZip, zipPath, { overwrite: true })));
 
 	s.stop(`${brand.success("✓")} 已打包: ${brand.primary(`${sizeMB}MB`)}`);
 
@@ -381,7 +398,11 @@ async function handleImport(file?: string) {
 
 		if (projectExists(projectName)) {
 			printError(`项目已存在: ${projectName}`);
-			console.log(pc.dim("  使用 ") + brand.primary("p open " + projectName) + pc.dim(" 打开已有项目"));
+			console.log(
+				pc.dim("  使用 ") +
+					brand.primary(`p open ${projectName}`) +
+					pc.dim(" 打开已有项目"),
+			);
 			process.exit(1);
 		}
 
@@ -397,7 +418,11 @@ async function handleImport(file?: string) {
 			await promptDeletePSync();
 			outro(brand.success(`✨ 项目 ${projectName} 导入成功！`));
 			console.log();
-			console.log(pc.dim("  使用 ") + brand.primary("p open " + projectName) + pc.dim(" 打开项目"));
+			console.log(
+				pc.dim("  使用 ") +
+					brand.primary(`p open ${projectName}`) +
+					pc.dim(" 打开项目"),
+			);
 			console.log();
 		}
 		return;
@@ -409,20 +434,30 @@ async function handleImport(file?: string) {
 	const zips = await scanDownloadsDir();
 
 	if (zips.length === 0) {
-			printInfo("Downloads/ 中没有可导入的 .zip 文件");
-		console.log(pc.dim("  提示：先在另一台机器上运行 ") + brand.primary("p sync export") + pc.dim(" 并通过 LocalSend 发送"));
+		printInfo("Downloads/ 中没有可导入的 .zip 文件");
+		console.log(
+			pc.dim("  提示：先在另一台机器上运行 ") +
+				brand.primary("p sync export") +
+				pc.dim(" 并通过 LocalSend 发送"),
+		);
 		console.log();
 		return;
 	}
 
 	if (zips.length === 1) {
 		const zip = zips[0];
-		console.log(pc.dim("  找到: ") + brand.primary(zip.name) + pc.dim(` (${zip.size})`));
+		console.log(
+			pc.dim("  找到: ") + brand.primary(zip.name) + pc.dim(` (${zip.size})`),
+		);
 		console.log();
 
 		if (projectExists(zip.name)) {
 			printError(`项目已存在: ${zip.name}`);
-			console.log(pc.dim("  使用 ") + brand.primary("p open " + zip.name) + pc.dim(" 打开已有项目"));
+			console.log(
+				pc.dim("  使用 ") +
+					brand.primary(`p open ${zip.name}`) +
+					pc.dim(" 打开已有项目"),
+			);
 			process.exit(1);
 		}
 
@@ -433,7 +468,11 @@ async function handleImport(file?: string) {
 			await promptDeletePSync();
 			outro(brand.success(`✨ 项目 ${zip.name} 导入成功！`));
 			console.log();
-			console.log(pc.dim("  使用 ") + brand.primary("p open " + zip.name) + pc.dim(" 打开项目"));
+			console.log(
+				pc.dim("  使用 ") +
+					brand.primary(`p open ${zip.name}`) +
+					pc.dim(" 打开项目"),
+			);
 			console.log();
 		}
 		return;
@@ -485,7 +524,9 @@ async function handleImport(file?: string) {
 		outro(brand.success(`✨ 已成功导入 ${imported} 个项目`));
 	} else {
 		await promptDeletePSync();
-		outro(`${brand.success("✓")} 已导入 ${imported} 个，${selected.length - imported} 个失败`);
+		outro(
+			`${brand.success("✓")} 已导入 ${imported} 个，${selected.length - imported} 个失败`,
+		);
 	}
 	console.log();
 }

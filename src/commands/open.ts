@@ -1,9 +1,4 @@
-import {
-	confirm,
-	isCancel,
-	outro,
-	spinner,
-} from "@clack/prompts";
+import { confirm, isCancel, outro, spinner } from "@clack/prompts";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
@@ -16,12 +11,9 @@ import {
 	listProjects,
 	projectExists,
 } from "../core/project";
+import { CANCEL, liveSearch } from "../utils/live-search";
+import { filterProjects, projectHint } from "../utils/project-search";
 import { isTUICommand, openWithIDE } from "../utils/shell";
-import { liveSearch, CANCEL } from "../utils/live-search";
-import {
-	filterProjects,
-	projectHint,
-} from "../utils/project-search";
 import { brand, printError, printInfo } from "../utils/ui";
 
 /**
@@ -89,7 +81,9 @@ export const openCommand = new Command("open")
 
 			try {
 				const { resolved } = await openWithIDE(ide, process.cwd(), true);
-				s.stop(`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开当前目录`);
+				s.stop(
+					`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开当前目录`,
+				);
 			} catch (error) {
 				s.stop("打开失败");
 				printError((error as Error).message);
@@ -116,8 +110,14 @@ export const openCommand = new Command("open")
 			s.start(`正在打开...`);
 
 			try {
-				const { resolved } = await openWithIDE(ide, process.cwd(), !!options?.ide);
-				s.stop(`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开当前目录`);
+				const { resolved } = await openWithIDE(
+					ide,
+					process.cwd(),
+					!!options?.ide,
+				);
+				s.stop(
+					`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开当前目录`,
+				);
 			} catch (error) {
 				s.stop("打开失败");
 				printError((error as Error).message);
@@ -150,9 +150,7 @@ export const openCommand = new Command("open")
 			} else {
 				printError(`项目不存在: ${name}`);
 				console.log(
-					pc.dim("使用 ") +
-						brand.primary("p ls") +
-						pc.dim(" 查看所有项目"),
+					pc.dim("使用 ") + brand.primary("p ls") + pc.dim(" 查看所有项目"),
 				);
 				process.exit(1);
 			}
@@ -228,7 +226,9 @@ export const openCommand = new Command("open")
 
 		try {
 			const { resolved } = await openWithIDE(ide, projectPath, !!options?.ide);
-			s.stop(`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开: ${brand.secondary(projectName)}`);
+			s.stop(
+				`${brand.success("✓")} 已用 ${brand.primary(resolved)} 打开: ${brand.secondary(projectName)}`,
+			);
 		} catch (error) {
 			s.stop("打开失败");
 			console.log();

@@ -3,13 +3,11 @@ import { Writable } from "node:stream";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
-import { confirm } from "@clack/prompts";
 // @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
 import { cursor as ansiCursor } from "sisteransi";
-
-import { deleteProjectMeta, getProjectPath, listProjects } from "../core/project";
-import { openWithIDE } from "../utils/shell";
 import { loadConfig } from "../core/config";
+import { deleteProjectMeta, listProjects } from "../core/project";
+import { openWithIDE } from "../utils/shell";
 import { brand, formatRelativeTime, printInfo } from "../utils/ui";
 
 const MAX_VISIBLE = 10;
@@ -34,7 +32,9 @@ export const recentCommand = new Command("recent")
 		const stdout = process.stdout as NodeJS.WriteStream;
 
 		const interceptStream = new Writable({
-			write(_chunk, _encoding, callback) { callback(); },
+			write(_chunk, _encoding, callback) {
+				callback();
+			},
 		});
 
 		stdin.setRawMode(true);
@@ -52,7 +52,7 @@ export const recentCommand = new Command("recent")
 		let scrollOffset = 0;
 		let blockHeight = 0;
 		let done = false;
-		let currentProjects = recent;
+		const currentProjects = recent;
 		let mode: "list" | "confirm" | "deleting" = "list";
 
 		function render() {
@@ -62,12 +62,20 @@ export const recentCommand = new Command("recent")
 			const lines: string[] = [];
 
 			// 标题
-			lines.push(`  ${brand.secondary("◆")} 最近项目 ${pc.dim(`(${currentProjects.length})`)}`);
+			lines.push(
+				`  ${brand.secondary("◆")} 最近项目 ${pc.dim(`(${currentProjects.length})`)}`,
+			);
 			lines.push(`  ${brand.secondary("│")}`);
 
 			// 项目列表
-			const visibleCount = Math.min(MAX_VISIBLE, currentProjects.length - scrollOffset);
-			const visible = currentProjects.slice(scrollOffset, scrollOffset + visibleCount);
+			const visibleCount = Math.min(
+				MAX_VISIBLE,
+				currentProjects.length - scrollOffset,
+			);
+			const visible = currentProjects.slice(
+				scrollOffset,
+				scrollOffset + visibleCount,
+			);
 
 			for (let i = 0; i < visible.length; i++) {
 				const idx = scrollOffset + i;
@@ -78,23 +86,31 @@ export const recentCommand = new Command("recent")
 				const time = pc.dim(`  ${formatRelativeTime(p.modifiedAt)}`);
 				const note = p.note ? pc.dim(` — ${p.note}`) : "";
 				const tpl = p.template ? ` ${pc.cyan(`[${p.template}]`)}` : "";
-				const tags = p.tags?.length ? ` ${pc.magenta(p.tags.map(t => `#${t}`).join(" "))}` : "";
+				const tags = p.tags?.length
+					? ` ${pc.magenta(p.tags.map((t) => `#${t}`).join(" "))}`
+					: "";
 
-				lines.push(`  ${brand.secondary("│")} ${marker} ${name}${tpl}${tags}${note}${time}`);
+				lines.push(
+					`  ${brand.secondary("│")} ${marker} ${name}${tpl}${tags}${note}${time}`,
+				);
 			}
 
 			// 底部提示：根据模式变化
 			if (mode === "list") {
-				lines.push(`  ${brand.secondary("└")} ${pc.dim("j/k 移动 · o 打开 · d 删除 · q 退出")}`);
+				lines.push(
+					`  ${brand.secondary("└")} ${pc.dim("j/k 移动 · o 打开 · d 删除 · q 退出")}`,
+				);
 			} else if (mode === "confirm") {
 				const p = currentProjects[selectedIndex];
-				lines.push(`  ${brand.secondary("└")} ${pc.yellow(`确认删除 ${p?.name}？`)} ${pc.inverse(" Y ")}/n`);
+				lines.push(
+					`  ${brand.secondary("└")} ${pc.yellow(`确认删除 ${p?.name}？`)} ${pc.inverse(" Y ")}/n`,
+				);
 			} else if (mode === "deleting") {
 				lines.push(`  ${brand.secondary("└")} ${pc.dim("正在删除...")}`);
 			}
 
 			for (const line of lines) {
-				parts.push(line + "\x1b[K\n");
+				parts.push(`${line}\x1b[K\n`);
 			}
 
 			if (blockHeight > lines.length) {
@@ -147,7 +163,9 @@ export const recentCommand = new Command("recent")
 			clearBlock();
 			blockHeight = 0;
 
-			stdout.write(`  ${brand.success("✓")} 正在打开 ${brand.primary(project.name)}...\n`);
+			stdout.write(
+				`  ${brand.success("✓")} 正在打开 ${brand.primary(project.name)}...\n`,
+			);
 
 			// 先释放 stdin、恢复终端状态，避免与 TUI（如 claude）抢占键盘输入
 			cleanup();
@@ -174,7 +192,7 @@ export const recentCommand = new Command("recent")
 					selectedIndex = Math.max(0, currentProjects.length - 1);
 				}
 				scrollSelectedIntoView();
-			} catch (error) {
+			} catch (_error) {
 				// 删除失败，保持列表不变
 			}
 
@@ -197,7 +215,11 @@ export const recentCommand = new Command("recent")
 
 			// confirm 模式下的按键处理
 			if (mode === "confirm") {
-				if (key.name === "escape" || key.name === "q" || key.sequence === "\x03") {
+				if (
+					key.name === "escape" ||
+					key.name === "q" ||
+					key.sequence === "\x03"
+				) {
 					mode = "list";
 					render();
 					return;
@@ -214,7 +236,11 @@ export const recentCommand = new Command("recent")
 				return;
 			}
 
-			if (key.sequence === "\x03" || key.name === "q" || key.name === "escape") {
+			if (
+				key.sequence === "\x03" ||
+				key.name === "q" ||
+				key.name === "escape"
+			) {
 				clearBlock();
 				blockHeight = 0;
 				cleanup();
