@@ -27,7 +27,11 @@ function loadIDECache(): Record<string, string> {
 		return ideCache;
 	}
 	try {
-		ideCache = JSON.parse(readFileSync(IDE_CACHE_PATH, "utf-8"));
+		ideCache =
+			(JSON.parse(readFileSync(IDE_CACHE_PATH, "utf-8")) as Record<
+				string,
+				string
+			>) ?? {};
 		return ideCache;
 	} catch {
 		ideCache = {};
@@ -135,7 +139,7 @@ const TUI_COMMANDS = new Set(["claude", "codex", "gemini", "aider"]);
  * 判断是否为终端 TUI 命令（如 claude），调用方需避免在其运行期间使用 spinner
  */
 export function isTUICommand(ide: string): boolean {
-	return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0]);
+	return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0] ?? "");
 }
 
 /**

@@ -14623,7 +14623,7 @@ function loadIDECache() {
     return ideCache;
   }
   try {
-    ideCache = JSON.parse(readFileSync(IDE_CACHE_PATH, "utf-8"));
+    ideCache = JSON.parse(readFileSync(IDE_CACHE_PATH, "utf-8")) ?? {};
     return ideCache;
   } catch {
     ideCache = {};
@@ -14699,7 +14699,7 @@ async function execAndCapture(command, cwd) {
 }
 var TUI_COMMANDS = new Set(["claude", "codex", "gemini", "aider"]);
 function isTUICommand(ide) {
-  return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0]);
+  return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0] ?? "");
 }
 async function openWithIDE(ide, path, fuzzy = false) {
   const resolved = fuzzy ? resolveCommand(ide) : ide;
@@ -15227,6 +15227,8 @@ async function liveSearch(opts) {
         const idx = state.scrollOffset + i;
         const isCursor = idx === state.selectedIndex;
         const item = visible[i];
+        if (!item)
+          continue;
         let marker;
         if (multi) {
           const checked = state.checked.has(item.value);
@@ -15349,11 +15351,13 @@ async function liveSearch(opts) {
               submitResult(values, `${values.length} \u4E2A\u9879\u76EE`);
             } else {
               const item = state.filtered[state.selectedIndex];
-              submitResult([item.value], item.label);
+              if (item)
+                submitResult([item.value], item.label);
             }
           } else {
             const selected = state.filtered[state.selectedIndex];
-            submitResult([selected.value], selected.label);
+            if (selected)
+              submitResult([selected.value], selected.label);
           }
           return;
         }
@@ -15491,12 +15495,12 @@ var cdCommand = new Command("cd").alias("c").description("\u5207\u6362\u5230\u98
       Se(import_picocolors9.default.dim("\u5DF2\u53D6\u6D88"));
       process.exit(0);
     }
-    projectName = result[0];
+    projectName = result[0] ?? "";
   } else if (!projectExists(name)) {
     const filtered = filterProjects(projects, name);
     if (filtered.length === 1) {
-      console.log(import_picocolors9.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-      projectName = filtered[0].name;
+      projectName = filtered[0]?.name ?? name;
+      console.log(import_picocolors9.default.dim("  \u5339\u914D\u5230: ") + brand.primary(projectName));
     } else if (filtered.length > 1) {
       console.log(import_picocolors9.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
       const options = projects.map((p2) => ({
@@ -15525,7 +15529,7 @@ var cdCommand = new Command("cd").alias("c").description("\u5207\u6362\u5230\u98
         Se(import_picocolors9.default.dim("\u5DF2\u53D6\u6D88"));
         process.exit(0);
       }
-      projectName = result[0];
+      projectName = result[0] ?? "";
     } else {
       printError(`\u9879\u76EE\u4E0D\u5B58\u5728: ${name}`);
       console.log(import_picocolors9.default.dim("\u4F7F\u7528 ") + brand.primary("p ls") + import_picocolors9.default.dim(" \u67E5\u770B\u6240\u6709\u9879\u76EE"));
@@ -15587,12 +15591,12 @@ var claudeCommand = new Command("claude").alias("cc").description("\u5207\u6362\
       Se(import_picocolors10.default.dim("\u5DF2\u53D6\u6D88"));
       process.exit(0);
     }
-    projectName = result[0];
+    projectName = result[0] ?? "";
   } else if (!projectExists(name)) {
     const filtered = filterProjects(projects, name);
     if (filtered.length === 1) {
-      console.log(import_picocolors10.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-      projectName = filtered[0].name;
+      projectName = filtered[0]?.name ?? name;
+      console.log(import_picocolors10.default.dim("  \u5339\u914D\u5230: ") + brand.primary(projectName));
     } else if (filtered.length > 1) {
       console.log(import_picocolors10.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
       const options = projects.map((p2) => ({
@@ -15621,7 +15625,7 @@ var claudeCommand = new Command("claude").alias("cc").description("\u5207\u6362\
         Se(import_picocolors10.default.dim("\u5DF2\u53D6\u6D88"));
         process.exit(0);
       }
-      projectName = result[0];
+      projectName = result[0] ?? "";
     } else {
       printError(`\u9879\u76EE\u4E0D\u5B58\u5728: ${name}`);
       console.log(import_picocolors10.default.dim("\u4F7F\u7528 ") + brand.primary("p ls") + import_picocolors10.default.dim(" \u67E5\u770B\u6240\u6709\u9879\u76EE"));
@@ -15675,10 +15679,10 @@ function extractProjectName(url) {
 function extractSlug(url) {
   let match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
   if (match)
-    return { owner: match[1], repo: match[2] };
+    return { owner: match[1] ?? "", repo: match[2] ?? "" };
   match = url.match(/git@[^:]+:([^/]+)\/([^/]+?)(?:\.git)?$/);
   if (match)
-    return { owner: match[1], repo: match[2] };
+    return { owner: match[1] ?? "", repo: match[2] ?? "" };
   return null;
 }
 async function getGitUsername() {
@@ -15867,7 +15871,7 @@ var copyCommand = new Command("copy").alias("cp").description("\u5168\u91CF\u590
   const isMultiple = paths.length > 1;
   const targets = [];
   for (let i = 0;i < paths.length; i++) {
-    const sourcePath = resolve3(paths[i]);
+    const sourcePath = resolve3(paths[i] ?? "");
     if (!import_fs_extra6.default.existsSync(sourcePath)) {
       printError(`\u8DEF\u5F84\u4E0D\u5B58\u5728: ${sourcePath}`);
       process.exit(1);
@@ -16142,8 +16146,8 @@ var deleteCommand = new Command("delete").alias("d").alias("rm").description("\u
     }
     return;
   }
-  if (args.length === 1 && args[0].includes("*")) {
-    const name2 = args[0];
+  if (args.length === 1 && args[0]?.includes("*")) {
+    const name2 = args[0] ?? "";
     let matched = wildcardMatch(projects, name2);
     if (matched.length === 0) {
       const keyword = name2.replace(/\*/g, "");
@@ -16230,7 +16234,7 @@ var deleteCommand = new Command("delete").alias("d").alias("rm").description("\u
     await batchDelete(matched);
     return;
   }
-  const name = args[0];
+  const name = args[0] ?? "";
   let projectNames;
   if (projectExists(name)) {
     projectNames = [name];
@@ -16242,8 +16246,9 @@ var deleteCommand = new Command("delete").alias("d").alias("rm").description("\u
       process.exit(1);
     }
     if (filtered.length === 1) {
-      console.log(import_picocolors13.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-      projectNames = [filtered[0].name];
+      const matchedName = filtered[0]?.name ?? name;
+      projectNames = [matchedName];
+      console.log(import_picocolors13.default.dim("  \u5339\u914D\u5230: ") + brand.primary(matchedName));
     } else {
       console.log(import_picocolors13.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
       projectNames = await searchAndSelectDelete(projects, name);
@@ -16254,7 +16259,7 @@ var deleteCommand = new Command("delete").alias("d").alias("rm").description("\u
     await batchDelete(projectNames);
     return;
   }
-  const projectName = projectNames[0];
+  const projectName = projectNames[0] ?? name;
   const projectPath = getProjectPath(projectName);
   const shouldDelete = await ye({
     message: `\u786E\u5B9A\u8981\u5220\u9664\u9879\u76EE ${brand.primary(projectName)} \u5417\uFF1F\u6B64\u64CD\u4F5C\u4E0D\u53EF\u6062\u590D\uFF01`,
@@ -16910,13 +16915,13 @@ Streaming...
 `);
     const endIndex = force ? parts.length : parts.length - 1;
     for (let i = 0;i < endIndex; i++) {
-      const name = parts[i].trim();
+      const name = parts[i]?.trim();
       if (name && /^[a-z][a-z0-9-]*$/.test(name)) {
         names.push(name);
         options.onName?.(name);
       }
     }
-    partial = force ? "" : parts[parts.length - 1];
+    partial = force ? "" : parts[parts.length - 1] ?? "";
   }
   for (;; ) {
     const { done, value } = await reader.read();
@@ -16992,7 +16997,9 @@ async function generateProjectNames(description, options) {
   let streamStarted = false;
   for (let i = 0;i < chain.length; i++) {
     const provider = chain[i];
-    const fellBackFrom = i > 0 ? chain[i - 1] : null;
+    if (!provider)
+      break;
+    const fellBackFrom = (i > 0 ? chain[i - 1] : null) ?? null;
     if (streamStarted) {
       throw new LLMError(errors2[errors2.length - 1] || "\u6D41\u5F0F\u8F93\u51FA\u4E2D\u65AD");
     }
@@ -17078,6 +17085,8 @@ async function selectOrInput(opts) {
         const idx = state.scrollOffset + i;
         const isSelected = idx === state.selectedIndex && state.mode === "select";
         const item = visible[i];
+        if (!item)
+          continue;
         const marker = isSelected ? brand.primary("\u25C9") : import_picocolors19.default.dim("\u25CB");
         const label = isSelected ? brand.bold(item.label) : item.label;
         const hint = item.hint ? import_picocolors19.default.dim("  ") + item.hint : "";
@@ -17164,7 +17173,8 @@ async function selectOrInput(opts) {
           if (opts.options.length === 0)
             return;
           const selected = opts.options[state.selectedIndex];
-          submit(selected.value, selected.label);
+          if (selected)
+            submit(selected.value, selected.label);
           return;
         }
         case "escape": {
@@ -17249,12 +17259,13 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
     }
     const config2 = loadConfig();
     const tokens = rawArgs.slice(ddIdx + 1);
-    const alias = config2.shortcuts?.[tokens[0]];
+    const firstToken = tokens[0] ?? "";
+    const alias = config2.shortcuts?.[firstToken];
     if (alias) {
       const remaining = tokens.slice(1).join(" ");
       cmd = remaining ? `${alias} ${remaining}` : alias;
       console.log();
-      console.log(import_picocolors20.default.dim("  \u522B\u540D: ") + brand.primary(tokens[0]) + import_picocolors20.default.dim(` \u2192 ${alias}`));
+      console.log(import_picocolors20.default.dim("  \u522B\u540D: ") + brand.primary(firstToken) + import_picocolors20.default.dim(` \u2192 ${alias}`));
       console.log(import_picocolors20.default.dim("  \u914D\u7F6E: ") + import_picocolors20.default.underline(CONFIG_PATH));
     }
     console.log();
@@ -17275,7 +17286,7 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
         createdDirs = afterDirNames.filter((name2) => !existingProjects.has(name2));
       } catch {}
       if (result.stderr?.includes("ERR_PNPM_IGNORED_BUILDS") && createdDirs.length > 0) {
-        const projectDir = join9(PROJECTS_DIR, createdDirs[0]);
+        const projectDir = join9(PROJECTS_DIR, createdDirs[0] ?? "");
         console.log();
         const runApprove = await ye({
           message: "\u68C0\u6D4B\u5230 pnpm \u9700\u8981\u6279\u51C6\u6784\u5EFA\u811A\u672C\uFF0C\u662F\u5426\u8FD0\u884C pnpm approve-builds\uFF1F"
@@ -17344,10 +17355,10 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
       for (const n of newProjects) {
         console.log(`  ${brand.success("\u2713")} \u5DF2\u521B\u5EFA\u9879\u76EE: ${brand.primary(n)}`);
       }
-      const firstProject = getProjectPath(newProjects[0]);
+      const firstProject = getProjectPath(newProjects[0] ?? "");
       const openIde2 = options?.ide || config3.ide;
       if (isTUICommand(openIde2)) {
-        console.log(import_picocolors20.default.dim(`  \u6B63\u5728\u542F\u52A8 ${openIde2}: `) + brand.primary(newProjects[0]));
+        console.log(import_picocolors20.default.dim(`  \u6B63\u5728\u542F\u52A8 ${openIde2}: `) + brand.primary(newProjects[0] ?? ""));
         try {
           await openWithIDE(openIde2, firstProject);
         } catch (error) {
@@ -17396,7 +17407,7 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
     saveProjectMeta(cleanName, { template: "empty", tags });
     const openIde2 = options?.ide || config.ide;
     if (isTUICommand(openIde2)) {
-      console.log(brand.success("\u2713") + " " + brand.primary(name) + import_picocolors20.default.dim(` \u5DF2\u521B\u5EFA\uFF0C\u542F\u52A8 ${openIde2}...`));
+      console.log(brand.success("\u2713") + " " + brand.primary(name ?? cleanName) + import_picocolors20.default.dim(` \u5DF2\u521B\u5EFA\uFF0C\u542F\u52A8 ${openIde2}...`));
       try {
         await openWithIDE(openIde2, projectPath2);
       } catch (error) {
@@ -17407,7 +17418,7 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
     }
     try {
       await openWithIDE(openIde2, projectPath2);
-      console.log(brand.success("\u2713") + " " + brand.primary(name) + import_picocolors20.default.dim(" \u5DF2\u521B\u5EFA\u5E76\u6253\u5F00"));
+      console.log(brand.success("\u2713") + " " + brand.primary(name ?? cleanName) + import_picocolors20.default.dim(" \u5DF2\u521B\u5EFA\u5E76\u6253\u5F00"));
     } catch (error) {
       console.log();
       printError(error.message);
@@ -17553,13 +17564,13 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
       const keys = Object.keys(allTemplates);
       const matched = keys.filter((k3) => k3.toLowerCase().includes(q2));
       if (matched.length === 1) {
-        templateKey = matched[0];
+        templateKey = matched[0] ?? templateKey;
       } else if (matched.length > 1) {
         const result = await ve({
           message: `\u6A21\u677F '${options.template}' \u5339\u914D\u5230\u591A\u4E2A:`,
           options: matched.map((k3) => ({
             value: k3,
-            label: allTemplates[k3].name
+            label: allTemplates[k3]?.name ?? k3
           }))
         });
         if (pD(result)) {
@@ -17653,7 +17664,7 @@ function resolveProjectName(name) {
   const projects = listProjects();
   const filtered = filterProjects(projects, name);
   if (filtered.length === 1)
-    return filtered[0].name;
+    return filtered[0]?.name ?? name;
   if (filtered.length > 1) {
     printError(`\u5339\u914D\u5230\u591A\u4E2A\u9879\u76EE: ${filtered.map((p2) => p2.name).join(", ")}`);
     return null;
@@ -17816,8 +17827,9 @@ var openCommand = new Command("open").alias("o").description("\u6253\u5F00\u9879
   } else if (!projectExists(name)) {
     const filtered = filterProjects(projects, name);
     if (filtered.length === 1) {
-      console.log(import_picocolors22.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-      projectNames = [filtered[0].name];
+      const matchedName = filtered[0]?.name ?? name;
+      console.log(import_picocolors22.default.dim("  \u5339\u914D\u5230: ") + brand.primary(matchedName));
+      projectNames = [matchedName];
     } else if (filtered.length > 1) {
       console.log(import_picocolors22.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
       projectNames = await searchAndSelect(projects, name);
@@ -17841,7 +17853,7 @@ var openCommand = new Command("open").alias("o").description("\u6253\u5F00\u9879
     }
     return;
   }
-  const projectName = projectNames[0];
+  const projectName = projectNames[0] ?? name ?? "";
   const projectPath = getProjectPath(projectName);
   const currentDir = process.cwd();
   if (projectPath === currentDir) {
@@ -17925,7 +17937,7 @@ var pathCommand = new Command("path").alias("p").alias("pp").description("\u6253
       }
       process.exit(1);
     }
-    projectName = filtered[0].name;
+    projectName = filtered[0]?.name ?? "";
   }
   process.stdout.write(`${getProjectPath(projectName)}
 `);
@@ -18025,7 +18037,7 @@ async function publishWithRemote(projectPath, templateName) {
   const match = remoteUrl.match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?$/);
   if (!match)
     return false;
-  const [, owner, repo] = match;
+  const [, owner = "", repo = ""] = match;
   const cleanRepo = repo.replace(/\.git$/, "");
   Ie(bgOrange(" \u53D1\u5E03\u6A21\u677F "));
   console.log(import_picocolors25.default.dim("  \u4ED3\u5E93: ") + brand.primary(`${owner}/${cleanRepo}`));
@@ -18125,7 +18137,7 @@ async function publishNewRepo(projectPath, templateName, saveAsLocal) {
   let owner = "";
   const urlMatch = output.match(/https:\/\/github\.com\/([^/]+)\/[^\s/]+/);
   if (urlMatch) {
-    owner = urlMatch[1];
+    owner = urlMatch[1] ?? owner;
   } else {
     const whoami = await execAndCapture("gh api user --jq .login", process.cwd());
     owner = whoami.success ? whoami.output.trim() : "";
@@ -18192,7 +18204,7 @@ var publishCommand = new Command("publish").description("\u53D1\u5E03\u9879\u76E
     if (!projects.find((p2) => p2.name === name)) {
       const filtered = filterProjects(projects, name);
       if (filtered.length === 1) {
-        projectName = filtered[0].name;
+        projectName = filtered[0]?.name ?? "";
       } else {
         printError(`\u9879\u76EE\u4E0D\u5B58\u5728: ${name}`);
         process.exit(1);
@@ -18293,8 +18305,8 @@ var pushCommand = new Command("push").alias("pu").description("\u63D0\u4EA4\u5E7
     } else {
       const filtered = filterProjects(projects, name);
       if (filtered.length === 1) {
-        projectName = filtered[0].name;
-        projectPath = filtered[0].path;
+        projectName = filtered[0]?.name ?? "";
+        projectPath = filtered[0]?.path ?? "";
       } else {
         printError(`\u9879\u76EE\u4E0D\u5B58\u5728: ${name}`);
         process.exit(1);
@@ -18431,6 +18443,8 @@ var recentCommand = new Command("recent").alias("re").description("\u67E5\u770B\
       const idx = scrollOffset + i;
       const isSelected = idx === selectedIndex;
       const p2 = visible[i];
+      if (!p2)
+        continue;
       const marker = isSelected ? brand.primary("\u25C9") : import_picocolors27.default.dim("\u25CB");
       const name = isSelected ? brand.bold(p2.name) : p2.name;
       const time = import_picocolors27.default.dim(`  ${formatRelativeTime(p2.modifiedAt)}`);
@@ -18618,15 +18632,15 @@ async function searchAndSelect2(projects, initialQuery) {
     Se(import_picocolors28.default.dim("\u5DF2\u53D6\u6D88"));
     process.exit(0);
   }
-  return result[0];
+  return result[0] ?? "";
 }
 function extractRepoSlug(url) {
   let match = url.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
   if (match)
-    return match[1];
+    return match[1] ?? null;
   match = url.match(/git@[^:]+:([^/]+\/[^/]+?)(?:\.git)?$/);
   if (match)
-    return match[1];
+    return match[1] ?? null;
   return null;
 }
 async function getRemoteOrigin(projectPath) {
@@ -18674,8 +18688,8 @@ var renameCommand = new Command("rename").alias("mv").description("\u91CD\u547D\
   } else if (!projectExists(projectName)) {
     const filtered = filterProjects(projects, projectName);
     if (filtered.length === 1) {
-      console.log(import_picocolors28.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-      projectName = filtered[0].name;
+      console.log(import_picocolors28.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0]?.name ?? ""));
+      projectName = filtered[0]?.name ?? "";
     } else if (filtered.length > 1) {
       console.log(import_picocolors28.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
       projectName = await searchAndSelect2(projects, projectName);
@@ -18821,7 +18835,7 @@ var runCommand = new Command("run").alias("r").description("\u5728\u5F53\u524D\u
     message: "\u9009\u62E9\u8981\u6267\u884C\u7684 hooks:",
     options: allHookKeys.map((key) => ({
       value: key,
-      label: config.hooks[key].name,
+      label: config.hooks[key]?.name ?? key,
       hint: key
     })),
     required: true
@@ -18908,7 +18922,7 @@ async function searchAndSelect3(projects, initialQuery) {
     Se(import_picocolors30.default.dim("\u5DF2\u53D6\u6D88"));
     process.exit(0);
   }
-  return result[0];
+  return result[0] ?? "";
 }
 async function openInFileManager(targetPath) {
   const platform = process.platform;
@@ -18996,8 +19010,8 @@ async function handleExport(name) {
     if (!projectExists(projectName)) {
       const filtered = filterProjects(projects, projectName);
       if (filtered.length === 1) {
-        console.log(import_picocolors30.default.dim("  \u5339\u914D\u5230: ") + brand.primary(filtered[0].name));
-        projectName = filtered[0].name;
+        projectName = filtered[0]?.name ?? projectName;
+        console.log(import_picocolors30.default.dim("  \u5339\u914D\u5230: ") + brand.primary(projectName));
       } else if (filtered.length > 1) {
         console.log(import_picocolors30.default.dim(`  \u5339\u914D\u5230 ${filtered.length} \u4E2A\u9879\u76EE`));
         projectName = await searchAndSelect3(projects, projectName);
@@ -19129,6 +19143,8 @@ async function handleImport(file) {
   }
   if (zips.length === 1) {
     const zip = zips[0];
+    if (!zip)
+      return;
     console.log(import_picocolors30.default.dim("  \u627E\u5230: ") + brand.primary(zip.name) + import_picocolors30.default.dim(` (${zip.size})`));
     console.log();
     if (projectExists(zip.name)) {
@@ -19419,7 +19435,7 @@ async function handleAdd(target, templateNameArg) {
     console.log();
     return;
   }
-  let selectedProject = target;
+  let selectedProject = target ?? "";
   const options = buildTemplateOptions(projects);
   if (!selectedProject) {
     const result = await liveSearch({
@@ -19441,12 +19457,12 @@ async function handleAdd(target, templateNameArg) {
       Se(import_picocolors32.default.dim("\u5DF2\u53D6\u6D88"));
       process.exit(0);
     }
-    selectedProject = result[0];
+    selectedProject = result[0] ?? "";
   } else {
     if (!projectExists(selectedProject)) {
       const filtered = filterProjects(projects, selectedProject);
       if (filtered.length === 1) {
-        selectedProject = filtered[0].name;
+        selectedProject = filtered[0]?.name ?? "";
       } else if (filtered.length > 1) {
         const result = await liveSearch({
           message: "\u641C\u7D22\u8981\u6DFB\u52A0\u4E3A\u6A21\u677F\u7684\u9879\u76EE:",
@@ -19468,7 +19484,7 @@ async function handleAdd(target, templateNameArg) {
           Se(import_picocolors32.default.dim("\u5DF2\u53D6\u6D88"));
           process.exit(0);
         }
-        selectedProject = result[0];
+        selectedProject = result[0] ?? "";
       } else {
         printError(`\u9879\u76EE\u4E0D\u5B58\u5728: ${selectedProject}`);
         console.log(import_picocolors32.default.dim("\u4F7F\u7528 ") + brand.primary("p ls") + import_picocolors32.default.dim(" \u67E5\u770B\u6240\u6709\u9879\u76EE"));
@@ -19633,7 +19649,7 @@ async function handlePublish(nameArg, templateNameArg) {
     const lower = nameArg.toLowerCase();
     const matched = localTemplates.filter((t) => t.toLowerCase().includes(lower));
     if (matched.length === 1) {
-      selectedTemplate = matched[0];
+      selectedTemplate = matched[0] ?? "";
     } else if (matched.length > 1) {
       printError(`\u591A\u4E2A\u6A21\u677F\u5339\u914D "${nameArg}": ${matched.join(", ")}`);
       process.exit(1);
@@ -19660,7 +19676,7 @@ async function handlePublish(nameArg, templateNameArg) {
       Se(import_picocolors32.default.dim("\u5DF2\u53D6\u6D88"));
       process.exit(0);
     }
-    selectedTemplate = result[0];
+    selectedTemplate = result[0] ?? "";
   }
   await doPublish(selectedTemplate);
 }
@@ -19697,7 +19713,7 @@ async function doPublish(selectedTemplate) {
   let owner = "";
   const urlMatch = output.match(/https:\/\/github\.com\/([^/]+)\/[^\s/]+/);
   if (urlMatch) {
-    owner = urlMatch[1];
+    owner = urlMatch[1] ?? "";
   } else {
     const whoami = await execAndCapture("gh api user --jq .login", process.cwd());
     owner = whoami.success ? whoami.output.trim() : "";
@@ -23149,7 +23165,7 @@ function detectCommonPrefixes(names) {
     const tokens = name.split("-");
     if (tokens.length < 2)
       continue;
-    const first = tokens[0];
+    const first = tokens[0] ?? "";
     groups.set(first, (groups.get(first) ?? 0) + 1);
   }
   const prefixes = [];
@@ -23230,10 +23246,11 @@ var unzipCommand = new Command("unzip").description("\u89E3\u538B\u9879\u76EE\u4
   if (options.auto) {
     applyAutoClean = anyCleaned;
   } else if (anyCleaned) {
-    applyAutoClean = await ye({
+    const c = await ye({
       message: "\u68C0\u6D4B\u5230 -template / \u54C8\u5E0C\u540E\u7F00\uFF0C\u662F\u5426\u79FB\u9664\uFF1F",
       initialValue: true
     });
+    applyAutoClean = !pD(c) && c;
   } else {
     applyAutoClean = false;
   }

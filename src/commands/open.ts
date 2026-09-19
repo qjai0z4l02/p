@@ -142,8 +142,9 @@ export const openCommand = new Command("open")
 		} else if (!projectExists(name)) {
 			const filtered = filterProjects(projects, name);
 			if (filtered.length === 1) {
-				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0].name));
-				projectNames = [filtered[0].name];
+				const matchedName = filtered[0]?.name ?? name;
+				console.log(pc.dim("  匹配到: ") + brand.primary(matchedName));
+				projectNames = [matchedName];
 			} else if (filtered.length > 1) {
 				console.log(pc.dim(`  匹配到 ${filtered.length} 个项目`));
 				projectNames = await searchAndSelect(projects, name);
@@ -174,7 +175,7 @@ export const openCommand = new Command("open")
 		}
 
 		// 单个打开
-		const projectName = projectNames[0];
+		const projectName = projectNames[0] ?? name ?? "";
 		const projectPath = getProjectPath(projectName);
 		const currentDir = process.cwd();
 

@@ -40,7 +40,7 @@ export const pathCommand = new Command("path")
 				}
 				process.exit(1);
 			}
-			projectName = filtered[0].name;
+			projectName = filtered[0]?.name ?? "";
 		}
 
 		process.stdout.write(`${getProjectPath(projectName)}\n`);

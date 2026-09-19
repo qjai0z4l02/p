@@ -69,7 +69,7 @@ export const copyCommand = new Command("copy")
 
 			// 解析并验证每个目标
 			for (let i = 0; i < paths.length; i++) {
-				const sourcePath = resolve(paths[i]);
+				const sourcePath = resolve(paths[i] ?? "");
 
 				if (!fse.existsSync(sourcePath)) {
 					printError(`路径不存在: ${sourcePath}`);

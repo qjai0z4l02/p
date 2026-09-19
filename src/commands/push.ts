@@ -109,8 +109,8 @@ export const pushCommand = new Command("push")
 			} else {
 				const filtered = filterProjects(projects, name);
 				if (filtered.length === 1) {
-					projectName = filtered[0].name;
-					projectPath = filtered[0].path;
+					projectName = filtered[0]?.name ?? "";
+					projectPath = filtered[0]?.path ?? "";
 				} else {
 					printError(`项目不存在: ${name}`);
 					process.exit(1);

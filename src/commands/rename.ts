@@ -47,14 +47,14 @@ async function searchAndSelect(
 		process.exit(0);
 	}
 
-	return (result as string[])[0];
+	return (result as string[])[0] ?? "";
 }
 
 function extractRepoSlug(url: string): string | null {
 	let match = url.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
-	if (match) return match[1];
+	if (match) return match[1] ?? null;
 	match = url.match(/git@[^:]+:([^/]+\/[^/]+?)(?:\.git)?$/);
-	if (match) return match[1];
+	if (match) return match[1] ?? null;
 	return null;
 }
 
@@ -127,8 +127,8 @@ export const renameCommand = new Command("rename")
 		} else if (!projectExists(projectName)) {
 			const filtered = filterProjects(projects, projectName);
 			if (filtered.length === 1) {
-				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0].name));
-				projectName = filtered[0].name;
+				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0]?.name ?? ""));
+				projectName = filtered[0]?.name ?? "";
 			} else if (filtered.length > 1) {
 				console.log(pc.dim(`  匹配到 ${filtered.length} 个项目`));
 				projectName = await searchAndSelect(projects, projectName);

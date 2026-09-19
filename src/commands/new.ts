@@ -75,14 +75,15 @@ export const newCommand = new Command("new")
 				// 检测别名：第一个 token 匹配 config.shortcuts
 				const config = loadConfig();
 				const tokens = rawArgs.slice(ddIdx + 1);
-				const alias = config.shortcuts?.[tokens[0]];
+				const firstToken = tokens[0] ?? "";
+				const alias = config.shortcuts?.[firstToken];
 				if (alias) {
 					const remaining = tokens.slice(1).join(" ");
 					cmd = remaining ? `${alias} ${remaining}` : alias;
 					console.log();
 					console.log(
 						pc.dim("  别名: ") +
-							brand.primary(tokens[0]) +
+							brand.primary(firstToken) +
 							pc.dim(` → ${alias}`),
 					);
 					console.log(pc.dim("  配置: ") + pc.underline(CONFIG_PATH));
@@ -122,7 +123,7 @@ export const newCommand = new Command("new")
 						result.stderr?.includes("ERR_PNPM_IGNORED_BUILDS") &&
 						createdDirs.length > 0
 					) {
-						const projectDir = join(PROJECTS_DIR, createdDirs[0]);
+						const projectDir = join(PROJECTS_DIR, createdDirs[0] ?? "");
 						console.log();
 						const runApprove = await confirm({
 							message:
@@ -220,13 +221,14 @@ export const newCommand = new Command("new")
 					}
 
 					// 用 IDE 打开第一个新项目
-					const firstProject = getProjectPath(newProjects[0]);
+					const firstProject = getProjectPath(newProjects[0] ?? "");
 					const openIde = options?.ide || config.ide;
 
 					if (isTUICommand(openIde)) {
 						// TUI（如 claude）前台运行，不能用 spinner（会污染交互界面）
 						console.log(
-							pc.dim(`  正在启动 ${openIde}: `) + brand.primary(newProjects[0]),
+							pc.dim(`  正在启动 ${openIde}: `) +
+								brand.primary(newProjects[0] ?? ""),
 						);
 						try {
 							await openWithIDE(openIde, firstProject);
@@ -302,7 +304,7 @@ export const newCommand = new Command("new")
 					console.log(
 						brand.success("✓") +
 							" " +
-							brand.primary(name) +
+							brand.primary(name ?? cleanName) +
 							pc.dim(` 已创建，启动 ${openIde}...`),
 					);
 					try {
@@ -319,7 +321,7 @@ export const newCommand = new Command("new")
 					console.log(
 						brand.success("✓") +
 							" " +
-							brand.primary(name) +
+							brand.primary(name ?? cleanName) +
 							pc.dim(" 已创建并打开"),
 					);
 				} catch (error) {
@@ -503,13 +505,13 @@ export const newCommand = new Command("new")
 					const matched = keys.filter((k) => k.toLowerCase().includes(q));
 
 					if (matched.length === 1) {
-						templateKey = matched[0];
+						templateKey = matched[0] ?? templateKey;
 					} else if (matched.length > 1) {
 						const result = await select({
 							message: `模板 '${options.template}' 匹配到多个:`,
 							options: matched.map((k) => ({
 								value: k,
-								label: allTemplates[k].name,
+								label: allTemplates[k]?.name ?? k,
 							})),
 						});
 						if (isCancel(result)) {

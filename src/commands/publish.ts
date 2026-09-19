@@ -42,7 +42,7 @@ async function publishWithRemote(projectPath: string, templateName: string) {
 	const match = remoteUrl.match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?$/);
 	if (!match) return false;
 
-	const [, owner, repo] = match;
+	const [, owner = "", repo = ""] = match;
 	const cleanRepo = repo.replace(/\.git$/, "");
 
 	intro(bgOrange(" 发布模板 "));
@@ -185,7 +185,7 @@ async function publishNewRepo(
 	let owner = "";
 	const urlMatch = output.match(/https:\/\/github\.com\/([^/]+)\/[^\s/]+/);
 	if (urlMatch) {
-		owner = urlMatch[1];
+		owner = urlMatch[1] ?? owner;
 	} else {
 		const whoami = await execAndCapture(
 			"gh api user --jq .login",
@@ -295,7 +295,7 @@ export const publishCommand = new Command("publish")
 				if (!projects.find((p) => p.name === name)) {
 					const filtered = filterProjects(projects, name);
 					if (filtered.length === 1) {
-						projectName = filtered[0].name;
+						projectName = filtered[0]?.name ?? "";
 					} else {
 						printError(`项目不存在: ${name}`);
 						process.exit(1);

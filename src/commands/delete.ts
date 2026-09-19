@@ -27,7 +27,7 @@ import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 async function searchAndSelectDelete(
 	projects: ReturnType<typeof listProjects>,
 	initialQuery?: string,
-): Promise<string> {
+): Promise<string[]> {
 	const options = projects.map((p) => ({
 		value: p.name,
 		label: p.name,
@@ -261,8 +261,8 @@ export const deleteCommand = new Command("delete")
 		}
 
 		// 通配符模式（单参数）
-		if (args.length === 1 && args[0].includes("*")) {
-			const name = args[0];
+		if (args.length === 1 && args[0]?.includes("*")) {
+			const name = args[0] ?? "";
 			let matched = wildcardMatch(projects, name);
 
 			if (matched.length === 0) {
@@ -376,7 +376,7 @@ export const deleteCommand = new Command("delete")
 		}
 
 		// 单参数搜索删除
-		const name = args[0];
+		const name = args[0] ?? "";
 		let projectNames: string[];
 
 		if (projectExists(name)) {
@@ -391,8 +391,9 @@ export const deleteCommand = new Command("delete")
 				process.exit(1);
 			}
 			if (filtered.length === 1) {
-				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0].name));
-				projectNames = [filtered[0].name];
+				const matchedName = filtered[0]?.name ?? name;
+				projectNames = [matchedName];
+				console.log(pc.dim("  匹配到: ") + brand.primary(matchedName));
 			} else {
 				console.log(pc.dim(`  匹配到 ${filtered.length} 个项目`));
 				projectNames = await searchAndSelectDelete(projects, name);
@@ -405,7 +406,7 @@ export const deleteCommand = new Command("delete")
 			return;
 		}
 
-		const projectName = projectNames[0];
+		const projectName = projectNames[0] ?? name;
 		const projectPath = getProjectPath(projectName);
 
 		// 确认删除

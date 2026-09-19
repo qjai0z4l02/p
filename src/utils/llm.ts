@@ -199,13 +199,13 @@ ${NAME_RULES}
 		const parts = partial.split("\n");
 		const endIndex = force ? parts.length : parts.length - 1;
 		for (let i = 0; i < endIndex; i++) {
-			const name = parts[i].trim();
+			const name = parts[i]?.trim();
 			if (name && /^[a-z][a-z0-9-]*$/.test(name)) {
 				names.push(name);
 				options.onName?.(name);
 			}
 		}
-		partial = force ? "" : parts[parts.length - 1];
+		partial = force ? "" : (parts[parts.length - 1] ?? "");
 	}
 
 	for (;;) {
@@ -308,7 +308,8 @@ export async function generateProjectNames(
 
 	for (let i = 0; i < chain.length; i++) {
 		const provider = chain[i];
-		const fellBackFrom = i > 0 ? chain[i - 1] : null;
+		if (!provider) break;
+		const fellBackFrom = (i > 0 ? chain[i - 1] : null) ?? null;
 
 		if (streamStarted) {
 			// 理论上不会走到这里：流开始后 callProvider 直接抛出，外层不会进下一个

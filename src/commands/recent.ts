@@ -3,7 +3,6 @@ import { Writable } from "node:stream";
 import { Command } from "commander";
 import fse from "fs-extra";
 import pc from "picocolors";
-// @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
 import { cursor as ansiCursor } from "sisteransi";
 import { loadConfig } from "../core/config";
 import { deleteProjectMeta, listProjects } from "../core/project";
@@ -81,6 +80,7 @@ export const recentCommand = new Command("recent")
 				const idx = scrollOffset + i;
 				const isSelected = idx === selectedIndex;
 				const p = visible[i];
+				if (!p) continue;
 				const marker = isSelected ? brand.primary("◉") : pc.dim("○");
 				const name = isSelected ? brand.bold(p.name) : p.name;
 				const time = pc.dim(`  ${formatRelativeTime(p.modifiedAt)}`);

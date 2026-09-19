@@ -67,7 +67,7 @@ export const runCommand = new Command("run")
 			message: "选择要执行的 hooks:",
 			options: allHookKeys.map((key) => ({
 				value: key,
-				label: config.hooks[key].name,
+				label: config.hooks[key]?.name ?? key,
 				hint: key,
 			})),
 			required: true,

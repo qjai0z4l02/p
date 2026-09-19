@@ -1,5 +1,5 @@
 import { dirname, join, parse } from "node:path";
-import { confirm, intro, outro, spinner } from "@clack/prompts";
+import { confirm, intro, isCancel, outro, spinner } from "@clack/prompts";
 import AdmZip from "adm-zip";
 import { Command } from "commander";
 import fse from "fs-extra";
@@ -34,7 +34,7 @@ function detectCommonPrefixes(names: string[]): string[] {
 	for (const name of names) {
 		const tokens = name.split("-");
 		if (tokens.length < 2) continue; // 至少留 1 个 token 作后缀
-		const first = tokens[0];
+		const first = tokens[0] ?? "";
 		groups.set(first, (groups.get(first) ?? 0) + 1);
 	}
 
@@ -161,10 +161,11 @@ export const unzipCommand = new Command("unzip")
 		if (options.auto) {
 			applyAutoClean = anyCleaned;
 		} else if (anyCleaned) {
-			applyAutoClean = await confirm({
+			const c = await confirm({
 				message: "检测到 -template / 哈希后缀，是否移除？",
 				initialValue: true,
 			});
+			applyAutoClean = !isCancel(c) && c;
 		} else {
 			applyAutoClean = false;
 		}

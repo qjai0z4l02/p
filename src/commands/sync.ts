@@ -105,7 +105,7 @@ async function searchAndSelect(
 		process.exit(0);
 	}
 
-	return (result as string[])[0];
+	return (result as string[])[0] ?? "";
 }
 
 async function openInFileManager(targetPath: string): Promise<void> {
@@ -237,8 +237,8 @@ async function handleExport(name?: string) {
 		if (!projectExists(projectName)) {
 			const filtered = filterProjects(projects, projectName);
 			if (filtered.length === 1) {
-				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0].name));
-				projectName = filtered[0].name;
+				projectName = filtered[0]?.name ?? projectName;
+				console.log(pc.dim("  匹配到: ") + brand.primary(projectName));
 			} else if (filtered.length > 1) {
 				console.log(pc.dim(`  匹配到 ${filtered.length} 个项目`));
 				projectName = await searchAndSelect(projects, projectName);
@@ -446,6 +446,7 @@ async function handleImport(file?: string) {
 
 	if (zips.length === 1) {
 		const zip = zips[0];
+		if (!zip) return;
 		console.log(
 			pc.dim("  找到: ") + brand.primary(zip.name) + pc.dim(` (${zip.size})`),
 		);

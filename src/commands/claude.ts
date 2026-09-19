@@ -49,12 +49,12 @@ export const claudeCommand = new Command("claude")
 				process.exit(0);
 			}
 
-			projectName = result[0];
+			projectName = result[0] ?? "";
 		} else if (!projectExists(name)) {
 			const filtered = filterProjects(projects, name);
 			if (filtered.length === 1) {
-				console.log(pc.dim("  匹配到: ") + brand.primary(filtered[0].name));
-				projectName = filtered[0].name;
+				projectName = filtered[0]?.name ?? name;
+				console.log(pc.dim("  匹配到: ") + brand.primary(projectName));
 			} else if (filtered.length > 1) {
 				console.log(pc.dim(`  匹配到 ${filtered.length} 个项目`));
 
@@ -86,7 +86,7 @@ export const claudeCommand = new Command("claude")
 					process.exit(0);
 				}
 
-				projectName = result[0];
+				projectName = result[0] ?? "";
 			} else {
 				printError(`项目不存在: ${name}`);
 				console.log(

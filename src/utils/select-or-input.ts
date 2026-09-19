@@ -1,7 +1,6 @@
 import * as readline from "node:readline";
 import { Writable } from "node:stream";
 import pc from "picocolors";
-// @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
 import { cursor as ansiCursor } from "sisteransi";
 
 import { brand } from "./ui";
@@ -113,6 +112,7 @@ export async function selectOrInput(
 				const isSelected =
 					idx === state.selectedIndex && state.mode === "select";
 				const item = visible[i];
+				if (!item) continue;
 				const marker = isSelected ? brand.primary("◉") : pc.dim("○");
 				const label = isSelected ? brand.bold(item.label) : item.label;
 				const hint = item.hint ? pc.dim("  ") + item.hint : "";
@@ -215,7 +215,7 @@ export async function selectOrInput(
 					// 否则使用选中的选项
 					if (opts.options.length === 0) return;
 					const selected = opts.options[state.selectedIndex];
-					submit(selected.value, selected.label);
+					if (selected) submit(selected.value, selected.label);
 					return;
 				}
 				case "escape": {

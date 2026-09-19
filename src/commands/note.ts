@@ -23,7 +23,7 @@ function resolveProjectName(name: string): string | null {
 
 	const projects = listProjects();
 	const filtered = filterProjects(projects, name);
-	if (filtered.length === 1) return filtered[0].name;
+	if (filtered.length === 1) return filtered[0]?.name ?? name;
 	if (filtered.length > 1) {
 		printError(`匹配到多个项目: ${filtered.map((p) => p.name).join(", ")}`);
 		return null;

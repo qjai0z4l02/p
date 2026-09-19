@@ -157,7 +157,7 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 		return;
 	}
 
-	let selectedProject = target;
+	let selectedProject = target ?? "";
 	const options = buildTemplateOptions(projects);
 
 	// 如果没有提供项目名，实时搜索选择
@@ -182,13 +182,13 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 			process.exit(0);
 		}
 
-		selectedProject = (result as string[])[0];
+		selectedProject = (result as string[])[0] ?? "";
 	} else {
 		// 验证项目是否存在，不存在则模糊匹配
 		if (!projectExists(selectedProject)) {
 			const filtered = filterProjects(projects, selectedProject);
 			if (filtered.length === 1) {
-				selectedProject = filtered[0].name;
+				selectedProject = filtered[0]?.name ?? "";
 			} else if (filtered.length > 1) {
 				// 多个匹配 → 实时搜索，预填关键词
 				const result = await liveSearch({
@@ -210,7 +210,7 @@ async function handleAdd(target?: string, templateNameArg?: string) {
 					outro(pc.dim("已取消"));
 					process.exit(0);
 				}
-				selectedProject = (result as string[])[0];
+				selectedProject = (result as string[])[0] ?? "";
 			} else {
 				printError(`项目不存在: ${selectedProject}`);
 				console.log(
@@ -463,7 +463,7 @@ async function handlePublish(nameArg?: string, templateNameArg?: string) {
 			t.toLowerCase().includes(lower),
 		);
 		if (matched.length === 1) {
-			selectedTemplate = matched[0];
+			selectedTemplate = matched[0] ?? "";
 		} else if (matched.length > 1) {
 			printError(`多个模板匹配 "${nameArg}": ${matched.join(", ")}`);
 			process.exit(1);
@@ -494,7 +494,7 @@ async function handlePublish(nameArg?: string, templateNameArg?: string) {
 			process.exit(0);
 		}
 
-		selectedTemplate = (result as string[])[0];
+		selectedTemplate = (result as string[])[0] ?? "";
 	}
 
 	await doPublish(selectedTemplate);
@@ -551,7 +551,7 @@ async function doPublish(selectedTemplate: string) {
 	let owner = "";
 	const urlMatch = output.match(/https:\/\/github\.com\/([^/]+)\/[^\s/]+/);
 	if (urlMatch) {
-		owner = urlMatch[1];
+		owner = urlMatch[1] ?? "";
 	} else {
 		const whoami = await execAndCapture(
 			"gh api user --jq .login",

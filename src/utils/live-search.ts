@@ -1,7 +1,6 @@
 import * as readline from "node:readline";
 import { Writable } from "node:stream";
 import pc from "picocolors";
-// @ts-expect-error — sisteransi is a transitive dep of @clack/prompts
 import { cursor as ansiCursor } from "sisteransi";
 
 import { brand } from "./ui";
@@ -128,6 +127,7 @@ export async function liveSearch(
 				const idx = state.scrollOffset + i;
 				const isCursor = idx === state.selectedIndex;
 				const item = visible[i];
+				if (!item) continue;
 
 				let marker: string;
 				if (multi) {
@@ -270,11 +270,11 @@ export async function liveSearch(
 							submitResult(values, `${values.length} 个项目`);
 						} else {
 							const item = state.filtered[state.selectedIndex];
-							submitResult([item.value], item.label);
+							if (item) submitResult([item.value], item.label);
 						}
 					} else {
 						const selected = state.filtered[state.selectedIndex];
-						submitResult([selected.value], selected.label);
+						if (selected) submitResult([selected.value], selected.label);
 					}
 					return;
 				}
