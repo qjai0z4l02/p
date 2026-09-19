@@ -1,5 +1,11 @@
 # p
 
+## 1.24.1
+
+### Patch Changes
+
+- fix: Biome 全量清零；修复 rename 可能拼出 undefined 前缀 URL、note 空备注误写 undefined
+
 ## 1.24.0
 
 ### Minor Changes
