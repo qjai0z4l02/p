@@ -1,5 +1,11 @@
 # p
 
+## 1.24.2
+
+### Patch Changes
+
+- fix: TypeScript 严格模式全量修复，tsc --noEmit 归零
+
 ## 1.24.1
 
 ### Patch Changes
