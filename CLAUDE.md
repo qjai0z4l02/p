@@ -63,7 +63,8 @@ Help displays all aliases sorted longest-first (custom `Help.prototype.subcomman
 
 ## Patterns
 
-- **UI**: `@clack/prompts` for interactive prompts. Use `spinner()` for async ops — use **separate** spinner instances per step (reuse causes rendering artifacts). `intro()`/`outro()` for section framing.
+- **UI**: `@clack/prompts` for interactive prompts. `intro()`/`outro()` for section framing.
+- **Spinner 陷阱（重要）**：`@clack/prompts` 的 `spinner()` 把 `setInterval` id 存在闭包变量里，多次调用同一个实例的 `.start()` 会覆盖 id、泄漏前一个 interval。后果不是"渲染错乱"那么轻 —— **泄漏的 interval 会阻止事件循环退出，进程永远卡死**，并且持续用 `\r` 刷屏反复打印 stop message（用户看到"已推送 N 个文件"打印两次且一直转）。**每个步骤必须用独立 `spinner()` 实例**（命名如 `sPrepare` / `sCreate` / `sPush`），保证 start 一次 + stop 一次。参见 `src/commands/publish.ts` v1.23.1 的修复。
 - **Error flow**: `printError()` + `process.exit(1)`.
 - **Git helper**: Inline `async function git(args, cwd)` using `Bun.spawn` in commands that need git operations.
 - **Nested .git cleanup**: Always call `removeNestedGitDirs()` before `git add` in push/publish to prevent gitlink references.

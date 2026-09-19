@@ -5,7 +5,7 @@ import pc from "picocolors";
 
 import { loadConfig } from "../core/config";
 import { HOOKS_DIR } from "../utils/paths";
-import { openWithIDE } from "../utils/shell";
+import { isTUICommand, openWithIDE } from "../utils/shell";
 import { brand, printError, printInfo } from "../utils/ui";
 
 // 示例 Hook 脚本（JavaScript）
@@ -43,6 +43,18 @@ export const hookCommand = new Command("hook")
 			fse.writeFileSync(examplePath, EXAMPLE_HOOK, "utf-8");
 			printInfo("已创建示例 Hook 脚本: example.js");
 			console.log();
+		}
+
+		if (isTUICommand(config.ide)) {
+			// TUI（如 claude）前台运行，不能用 spinner
+			try {
+				await openWithIDE(config.ide, HOOKS_DIR);
+			} catch (error) {
+				printError((error as Error).message);
+				console.log(pc.dim("  Hooks 目录: ") + pc.underline(HOOKS_DIR));
+				process.exit(1);
+			}
+			return;
 		}
 
 		const s = spinner();

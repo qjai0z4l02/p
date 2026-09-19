@@ -34,6 +34,7 @@ import {
 	commandExists,
 	execAndCapture,
 	execInDir,
+	isTUICommand,
 	openWithIDE,
 } from "../utils/shell";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
@@ -47,12 +48,18 @@ export const newCommand = new Command("new")
 	.argument("[name]", "项目名称（支持 #tag 添加标签）")
 	.option("-t, --template [template]", "使用指定模板")
 	.option("-d, --desc <text>", "用描述生成项目名（AI 命名）")
+	.option("-i, --ide <ide>", "指定打开方式（claude, cursor, code 等）")
 	.option("--debug", "AI 调试模式")
 	.allowExcessArguments(true)
 	.action(
 		async (
 			name?: string,
-			options?: { template?: string | boolean; desc?: string; debug?: boolean },
+			options?: {
+				template?: string | boolean;
+				desc?: string;
+				ide?: string;
+				debug?: boolean;
+			},
 		) => {
 			// 检测 p new -- <command> 模式
 			const rawArgs = process.argv;
@@ -215,14 +222,28 @@ export const newCommand = new Command("new")
 
 					// 用 IDE 打开第一个新项目
 					const firstProject = getProjectPath(newProjects[0]);
-					const s = spinner();
-					s.start(`正在打开 ${config.ide}...`);
-					try {
-						await openWithIDE(config.ide, firstProject);
-						s.stop(`已用 ${config.ide} 打开`);
-					} catch (error) {
-						s.stop("打开失败");
-						printError((error as Error).message);
+					const openIde = options?.ide || config.ide;
+
+					if (isTUICommand(openIde)) {
+						// TUI（如 claude）前台运行，不能用 spinner（会污染交互界面）
+						console.log(
+							pc.dim(`  正在启动 ${openIde}: `) + brand.primary(newProjects[0]),
+						);
+						try {
+							await openWithIDE(openIde, firstProject);
+						} catch (error) {
+							printError((error as Error).message);
+						}
+					} else {
+						const s = spinner();
+						s.start(`正在打开 ${openIde}...`);
+						try {
+							await openWithIDE(openIde, firstProject);
+							s.stop(`已用 ${openIde} 打开`);
+						} catch (error) {
+							s.stop("打开失败");
+							printError((error as Error).message);
+						}
 					}
 				} else {
 					printInfo("未检测到新项目目录");
@@ -274,9 +295,28 @@ export const newCommand = new Command("new")
 				// 保存项目元数据
 				saveProjectMeta(cleanName, { template: "empty", tags });
 
-				// 打开 IDE
+				// 打开
+				const openIde = options?.ide || config.ide;
+
+				if (isTUICommand(openIde)) {
+					// TUI（如 claude）先打印结果再进入会话，退出会话后结束
+					console.log(
+						brand.success("✓") +
+							" " +
+							brand.primary(name) +
+							pc.dim(` 已创建，启动 ${openIde}...`),
+					);
+					try {
+						await openWithIDE(openIde, projectPath);
+					} catch (error) {
+						printError((error as Error).message);
+						console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+					}
+					return;
+				}
+
 				try {
-					await openWithIDE(config.ide, projectPath);
+					await openWithIDE(openIde, projectPath);
 					console.log(
 						brand.success("✓") +
 							" " +
@@ -539,15 +579,29 @@ export const newCommand = new Command("new")
 			// 7. 保存项目元数据
 			saveProjectMeta(projectName, { template: templateKey, tags });
 
-			// 8. 打开 IDE
+			// 8. 打开
+			const openIde = options?.ide || config.ide;
 			console.log();
+
+			if (isTUICommand(openIde)) {
+				// TUI（如 claude）先收尾输出，再前台进入会话
+				outro(brand.success("✨ 项目创建成功！"));
+				try {
+					await openWithIDE(openIde, projectPath);
+				} catch (error) {
+					printError((error as Error).message);
+					console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+				}
+				return;
+			}
+
 			const s = spinner();
-			s.start(`正在打开 ${config.ide}...`);
+			s.start(`正在打开 ${openIde}...`);
 			try {
-				await openWithIDE(config.ide, projectPath);
-				s.stop(`已用 ${config.ide} 打开`);
+				await openWithIDE(openIde, projectPath);
+				s.stop(`已用 ${openIde} 打开`);
 			} catch (error) {
-				s.stop(`打开 ${config.ide} 失败`);
+				s.stop(`打开 ${openIde} 失败`);
 				console.log();
 				printError((error as Error).message);
 				console.log();

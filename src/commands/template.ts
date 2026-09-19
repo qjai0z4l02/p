@@ -10,7 +10,13 @@ import { markTemplatePublished } from "../core/template";
 import { collectProjectFiles, copyFiles } from "../utils/files";
 import { liveSearch, CANCEL } from "../utils/live-search";
 import { TEMPLATES_DIR } from "../utils/paths";
-import { commandExists, execAndCapture, execInDir, openWithIDE } from "../utils/shell";
+import {
+	commandExists,
+	execAndCapture,
+	execInDir,
+	isTUICommand,
+	openWithIDE,
+} from "../utils/shell";
 import { filterProjects } from "../utils/project-search";
 import { bgOrange, brand, printError, printInfo } from "../utils/ui";
 
@@ -47,6 +53,19 @@ export const templateCommand = new Command("template")
 
 			// 确保 templates 目录存在
 			await fse.ensureDir(TEMPLATES_DIR);
+
+			if (isTUICommand(config.ide)) {
+				// TUI（如 claude）前台运行，不能用 spinner
+				try {
+					await openWithIDE(config.ide, TEMPLATES_DIR);
+				} catch (error) {
+					printError((error as Error).message);
+					console.log(pc.dim("  模板目录: ") + pc.underline(TEMPLATES_DIR));
+					process.exit(1);
+				}
+
+				return;
+			}
 
 			const s = spinner();
 			s.start(`正在用 ${config.ide} 打开模板目录...`);

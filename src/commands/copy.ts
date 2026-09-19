@@ -11,7 +11,12 @@ import {
 	saveProjectMeta,
 	validateProjectNameFormat,
 } from "../core/project";
-import { execAndCapture, moveToTrash, openWithIDE } from "../utils/shell";
+import {
+	execAndCapture,
+	isTUICommand,
+	moveToTrash,
+	openWithIDE,
+} from "../utils/shell";
 import { bgOrange, brand, printError } from "../utils/ui";
 
 interface CopyTarget {
@@ -150,6 +155,21 @@ export const copyCommand = new Command("copy")
 		// 打开 IDE（如指定）
 		if (options.open) {
 			for (const t of targets) {
+				if (isTUICommand(config.ide)) {
+					// TUI（如 claude）前台运行，不能用 spinner
+					console.log(
+						pc.dim(`  正在启动 ${config.ide}: `) +
+							brand.primary(t.projectName),
+					);
+					try {
+						await openWithIDE(config.ide, t.targetPath);
+					} catch (error) {
+						printError((error as Error).message);
+						console.log(pc.dim("  项目路径: ") + pc.underline(t.targetPath));
+					}
+					continue;
+				}
+
 				const ideSpinner = spinner();
 				ideSpinner.start(`正在用 ${config.ide} 打开 ${t.projectName}...`);
 

@@ -1019,7 +1019,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
         this._exitCallback = (err) => {
           if (err.code !== "commander.executeSubCommandAsync") {
             throw err;
-          } else {}
+          }
         };
       }
       return this;
@@ -14562,8 +14562,14 @@ import { join as join5 } from "path";
 // src/utils/shell.ts
 var import_picocolors4 = __toESM(require_picocolors(), 1);
 var {$: $2 } = globalThis.Bun;
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
-import { join as join4 } from "path";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync
+} from "fs";
+import { dirname as dirname2, join as join4 } from "path";
 
 // src/utils/ui.ts
 var import_picocolors3 = __toESM(require_picocolors(), 1);
@@ -14690,8 +14696,38 @@ async function execAndCapture(command, cwd) {
     return { success: false, output: "", error: err.message };
   }
 }
+var TUI_COMMANDS = new Set(["claude", "codex", "gemini", "aider"]);
+function isTUICommand(ide) {
+  return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0]);
+}
 async function openWithIDE(ide, path, fuzzy = false) {
   const resolved = fuzzy ? resolveCommand(ide) : ide;
+  if (isTUICommand(resolved)) {
+    let cwd = path;
+    try {
+      if (statSync(path).isFile())
+        cwd = dirname2(path);
+    } catch {}
+    if (!existsSync(cwd)) {
+      throw new Error(`\u8DEF\u5F84\u4E0D\u5B58\u5728: ${cwd}`);
+    }
+    const isWindows = process.platform === "win32";
+    const shell = isWindows ? process.env.COMSPEC || "cmd.exe" : "/bin/sh";
+    const shellArgs = isWindows ? ["/c"] : ["-c"];
+    try {
+      const proc = Bun.spawn([shell, ...shellArgs, resolved], {
+        cwd,
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+        env: process.env
+      });
+      await proc.exited;
+      return { resolved };
+    } catch {
+      throw new Error(`\u65E0\u6CD5\u6253\u5F00 ${ide}\uFF0C\u8BF7\u786E\u4FDD ${resolved} \u547D\u4EE4\u5DF2\u5B89\u88C5\u5E76\u6DFB\u52A0\u5230 PATH \u73AF\u5883\u53D8\u91CF\u3002`);
+    }
+  }
   try {
     await $2`${resolved} ${path}`.quiet();
     return { resolved };
@@ -15649,6 +15685,16 @@ var cloneCommand = new Command("clone").alias("cl").description("\u4ECE\u8FDC\u7
   }
   s.stop(`${brand.success("\u2713")} \u514B\u9686\u5B8C\u6210`);
   saveProjectMeta(projectName, { template: "clone" });
+  if (isTUICommand(config.ide)) {
+    Se(brand.success("\u2728 \u9879\u76EE\u514B\u9686\u6210\u529F\uFF01"));
+    try {
+      await openWithIDE(config.ide, projectPath);
+    } catch (error) {
+      printError(error.message);
+      console.log(import_picocolors10.default.dim("  \u9879\u76EE\u8DEF\u5F84: ") + import_picocolors10.default.underline(projectPath));
+    }
+    return;
+  }
   const ideSpinner = Y2();
   ideSpinner.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00 ${projectName}...`);
   try {
@@ -15769,6 +15815,16 @@ var configCommand = new Command("config").description("\u7F16\u8F91\u914D\u7F6E\
   console.log(brand.primary("  \u2699\uFE0F  \u914D\u7F6E\u6587\u4EF6"));
   printPath("  \u8DEF\u5F84", CONFIG_PATH);
   console.log();
+  if (isTUICommand(config.ide)) {
+    try {
+      await openWithIDE(config.ide, CONFIG_PATH);
+    } catch (error) {
+      printError(error.message);
+      printPath("  \u914D\u7F6E\u6587\u4EF6\u4F4D\u7F6E", CONFIG_PATH);
+      process.exit(1);
+    }
+    return;
+  }
   const s = Y2();
   s.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00\u914D\u7F6E\u6587\u4EF6...`);
   try {
@@ -15873,6 +15929,16 @@ var copyCommand = new Command("copy").alias("cp").description("\u5168\u91CF\u590
   }
   if (options.open) {
     for (const t of targets) {
+      if (isTUICommand(config.ide)) {
+        console.log(import_picocolors12.default.dim(`  \u6B63\u5728\u542F\u52A8 ${config.ide}: `) + brand.primary(t.projectName));
+        try {
+          await openWithIDE(config.ide, t.targetPath);
+        } catch (error) {
+          printError(error.message);
+          console.log(import_picocolors12.default.dim("  \u9879\u76EE\u8DEF\u5F84: ") + import_picocolors12.default.underline(t.targetPath));
+        }
+        continue;
+      }
       const ideSpinner = Y2();
       ideSpinner.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00 ${t.projectName}...`);
       try {
@@ -16235,6 +16301,16 @@ var hookCommand = new Command("hook").alias("hooks").description("\u7BA1\u7406\u
     printInfo("\u5DF2\u521B\u5EFA\u793A\u4F8B Hook \u811A\u672C: example.js");
     console.log();
   }
+  if (isTUICommand(config.ide)) {
+    try {
+      await openWithIDE(config.ide, HOOKS_DIR);
+    } catch (error) {
+      printError(error.message);
+      console.log(import_picocolors14.default.dim("  Hooks \u76EE\u5F55: ") + import_picocolors14.default.underline(HOOKS_DIR));
+      process.exit(1);
+    }
+    return;
+  }
   const s = Y2();
   s.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00 Hooks \u76EE\u5F55...`);
   try {
@@ -16566,6 +16642,16 @@ var metaCommand = new Command("meta").description("\u67E5\u770B\u9879\u76EE\u514
     import_fs_extra12.default.writeFileSync(METADATA_PATH, JSON.stringify({ projects: {} }, null, 2), "utf-8");
     printInfo("\u5DF2\u521B\u5EFA\u7A7A\u7684\u5143\u6570\u636E\u6587\u4EF6");
     console.log();
+  }
+  if (isTUICommand(config.ide)) {
+    try {
+      await openWithIDE(config.ide, METADATA_PATH);
+    } catch (error) {
+      printError(error.message);
+      printPath("  \u5143\u6570\u636E\u6587\u4EF6\u4F4D\u7F6E", METADATA_PATH);
+      process.exit(1);
+    }
+    return;
   }
   const s = Y2();
   s.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00\u5143\u6570\u636E\u6587\u4EF6...`);
@@ -17142,7 +17228,7 @@ async function selectOrInput(opts) {
 
 // src/commands/new.ts
 var REGENERATE = Symbol("regenerate");
-var newCommand = new Command("new").alias("n").alias("create").description("\u521B\u5EFA\u65B0\u9879\u76EE").argument("[name]", "\u9879\u76EE\u540D\u79F0\uFF08\u652F\u6301 #tag \u6DFB\u52A0\u6807\u7B7E\uFF09").option("-t, --template [template]", "\u4F7F\u7528\u6307\u5B9A\u6A21\u677F").option("-d, --desc <text>", "\u7528\u63CF\u8FF0\u751F\u6210\u9879\u76EE\u540D\uFF08AI \u547D\u540D\uFF09").option("--debug", "AI \u8C03\u8BD5\u6A21\u5F0F").allowExcessArguments(true).action(async (name, options) => {
+var newCommand = new Command("new").alias("n").alias("create").description("\u521B\u5EFA\u65B0\u9879\u76EE").argument("[name]", "\u9879\u76EE\u540D\u79F0\uFF08\u652F\u6301 #tag \u6DFB\u52A0\u6807\u7B7E\uFF09").option("-t, --template [template]", "\u4F7F\u7528\u6307\u5B9A\u6A21\u677F").option("-d, --desc <text>", "\u7528\u63CF\u8FF0\u751F\u6210\u9879\u76EE\u540D\uFF08AI \u547D\u540D\uFF09").option("-i, --ide <ide>", "\u6307\u5B9A\u6253\u5F00\u65B9\u5F0F\uFF08claude, cursor, code \u7B49\uFF09").option("--debug", "AI \u8C03\u8BD5\u6A21\u5F0F").allowExcessArguments(true).action(async (name, options) => {
   const rawArgs = process.argv;
   const ddIdx = rawArgs.indexOf("--");
   const newIdx = rawArgs.lastIndexOf("new");
@@ -17250,14 +17336,24 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
         console.log(`  ${brand.success("\u2713")} \u5DF2\u521B\u5EFA\u9879\u76EE: ${brand.primary(n)}`);
       }
       const firstProject = getProjectPath(newProjects[0]);
-      const s2 = Y2();
-      s2.start(`\u6B63\u5728\u6253\u5F00 ${config3.ide}...`);
-      try {
-        await openWithIDE(config3.ide, firstProject);
-        s2.stop(`\u5DF2\u7528 ${config3.ide} \u6253\u5F00`);
-      } catch (error) {
-        s2.stop("\u6253\u5F00\u5931\u8D25");
-        printError(error.message);
+      const openIde2 = options?.ide || config3.ide;
+      if (isTUICommand(openIde2)) {
+        console.log(import_picocolors20.default.dim(`  \u6B63\u5728\u542F\u52A8 ${openIde2}: `) + brand.primary(newProjects[0]));
+        try {
+          await openWithIDE(openIde2, firstProject);
+        } catch (error) {
+          printError(error.message);
+        }
+      } else {
+        const s2 = Y2();
+        s2.start(`\u6B63\u5728\u6253\u5F00 ${openIde2}...`);
+        try {
+          await openWithIDE(openIde2, firstProject);
+          s2.stop(`\u5DF2\u7528 ${openIde2} \u6253\u5F00`);
+        } catch (error) {
+          s2.stop("\u6253\u5F00\u5931\u8D25");
+          printError(error.message);
+        }
       }
     } else {
       printInfo("\u672A\u68C0\u6D4B\u5230\u65B0\u9879\u76EE\u76EE\u5F55");
@@ -17289,8 +17385,19 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
       await runHooks(config, "empty", projectPath2, cleanName);
     }
     saveProjectMeta(cleanName, { template: "empty", tags });
+    const openIde2 = options?.ide || config.ide;
+    if (isTUICommand(openIde2)) {
+      console.log(brand.success("\u2713") + " " + brand.primary(name) + import_picocolors20.default.dim(` \u5DF2\u521B\u5EFA\uFF0C\u542F\u52A8 ${openIde2}...`));
+      try {
+        await openWithIDE(openIde2, projectPath2);
+      } catch (error) {
+        printError(error.message);
+        console.log(import_picocolors20.default.dim("  \u9879\u76EE\u8DEF\u5F84: ") + import_picocolors20.default.underline(projectPath2));
+      }
+      return;
+    }
     try {
-      await openWithIDE(config.ide, projectPath2);
+      await openWithIDE(openIde2, projectPath2);
       console.log(brand.success("\u2713") + " " + brand.primary(name) + import_picocolors20.default.dim(" \u5DF2\u521B\u5EFA\u5E76\u6253\u5F00"));
     } catch (error) {
       console.log();
@@ -17494,14 +17601,25 @@ var newCommand = new Command("new").alias("n").alias("create").description("\u52
   }
   await runHooks(config, templateKey, projectPath, projectName);
   saveProjectMeta(projectName, { template: templateKey, tags });
+  const openIde = options?.ide || config.ide;
   console.log();
+  if (isTUICommand(openIde)) {
+    Se(brand.success("\u2728 \u9879\u76EE\u521B\u5EFA\u6210\u529F\uFF01"));
+    try {
+      await openWithIDE(openIde, projectPath);
+    } catch (error) {
+      printError(error.message);
+      console.log(import_picocolors20.default.dim("  \u9879\u76EE\u8DEF\u5F84: ") + import_picocolors20.default.underline(projectPath));
+    }
+    return;
+  }
   const s = Y2();
-  s.start(`\u6B63\u5728\u6253\u5F00 ${config.ide}...`);
+  s.start(`\u6B63\u5728\u6253\u5F00 ${openIde}...`);
   try {
-    await openWithIDE(config.ide, projectPath);
-    s.stop(`\u5DF2\u7528 ${config.ide} \u6253\u5F00`);
+    await openWithIDE(openIde, projectPath);
+    s.stop(`\u5DF2\u7528 ${openIde} \u6253\u5F00`);
   } catch (error) {
-    s.stop(`\u6253\u5F00 ${config.ide} \u5931\u8D25`);
+    s.stop(`\u6253\u5F00 ${openIde} \u5931\u8D25`);
     console.log();
     printError(error.message);
     console.log();
@@ -18033,6 +18151,15 @@ var openCommand = new Command("open").alias("o").description("\u6253\u5F00\u9879
   const config = loadConfig();
   if (name?.startsWith(":")) {
     const ide2 = name.slice(1);
+    if (isTUICommand(ide2)) {
+      try {
+        await openWithIDE(ide2, process.cwd(), true);
+      } catch (error) {
+        printError(error.message);
+        process.exit(1);
+      }
+      return;
+    }
     const s2 = Y2();
     s2.start(`\u6B63\u5728\u67E5\u627E ${ide2}...`);
     try {
@@ -18047,6 +18174,15 @@ var openCommand = new Command("open").alias("o").description("\u6253\u5F00\u9879
   }
   if (name === ".") {
     const ide2 = options?.ide || config.ide;
+    if (isTUICommand(ide2)) {
+      try {
+        await openWithIDE(ide2, process.cwd(), !!options?.ide);
+      } catch (error) {
+        printError(error.message);
+        process.exit(1);
+      }
+      return;
+    }
     const s2 = Y2();
     s2.start(`\u6B63\u5728\u6253\u5F00...`);
     try {
@@ -18126,6 +18262,19 @@ var openCommand = new Command("open").alias("o").description("\u6253\u5F00\u9879
       }
     }
   }
+  if (isTUICommand(ide)) {
+    try {
+      await openWithIDE(ide, projectPath, !!options?.ide);
+    } catch (error) {
+      console.log();
+      printError(error.message);
+      console.log();
+      console.log(import_picocolors24.default.dim("  \u9879\u76EE\u8DEF\u5F84: ") + import_picocolors24.default.underline(projectPath));
+      console.log();
+      process.exit(1);
+    }
+    return;
+  }
   const s = Y2();
   s.start(`\u6B63\u5728\u6253\u5F00...`);
   try {
@@ -18181,6 +18330,16 @@ var import_picocolors26 = __toESM(require_picocolors(), 1);
 var projectCommand = new Command("project").alias("projects").description("\u6253\u5F00\u9879\u76EE\u76EE\u5F55").action(async () => {
   const config = loadConfig();
   await import_fs_extra18.default.ensureDir(PROJECTS_DIR);
+  if (isTUICommand(config.ide)) {
+    try {
+      await openWithIDE(config.ide, PROJECTS_DIR);
+    } catch (error) {
+      printError(error.message);
+      console.log(import_picocolors26.default.dim("  \u9879\u76EE\u76EE\u5F55: ") + import_picocolors26.default.underline(PROJECTS_DIR));
+      process.exit(1);
+    }
+    return;
+  }
   const s = Y2();
   s.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00\u9879\u76EE\u76EE\u5F55...`);
   try {
@@ -18516,13 +18675,13 @@ var recentCommand = new Command("recent").alias("re").description("\u67E5\u770B\
     blockHeight = 0;
     stdout.write(`  ${brand.success("\u2713")} \u6B63\u5728\u6253\u5F00 ${brand.primary(project.name)}...
 `);
+    cleanup();
     try {
       await openWithIDE(config.ide, project.path);
     } catch (error) {
       stdout.write(`  ${import_picocolors28.default.red("\u2717")} ${error.message}
 `);
     }
-    cleanup();
   }
   async function handleDeleteConfirm() {
     const project = currentProjects[selectedIndex];
@@ -19173,6 +19332,16 @@ var templateCommand = new Command("template").alias("templates").alias("tp").des
   if (!action) {
     const config = loadConfig();
     await import_fs_extra22.default.ensureDir(TEMPLATES_DIR);
+    if (isTUICommand(config.ide)) {
+      try {
+        await openWithIDE(config.ide, TEMPLATES_DIR);
+      } catch (error) {
+        printError(error.message);
+        console.log(import_picocolors32.default.dim("  \u6A21\u677F\u76EE\u5F55: ") + import_picocolors32.default.underline(TEMPLATES_DIR));
+        process.exit(1);
+      }
+      return;
+    }
     const s = Y2();
     s.start(`\u6B63\u5728\u7528 ${config.ide} \u6253\u5F00\u6A21\u677F\u76EE\u5F55...`);
     try {

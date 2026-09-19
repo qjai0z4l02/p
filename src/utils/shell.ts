@@ -1,5 +1,11 @@
 import { $ } from "bun";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	readdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import pc from "picocolors";
 import { P_ROOT } from "./paths";
@@ -122,6 +128,16 @@ export async function execAndCapture(
 	}
 }
 
+// 终端 TUI 类命令：需前台继承 stdio 运行，且位置参数不是路径（如 claude [prompt]）
+const TUI_COMMANDS = new Set(["claude", "codex", "gemini", "aider"]);
+
+/**
+ * 判断是否为终端 TUI 命令（如 claude），调用方需避免在其运行期间使用 spinner
+ */
+export function isTUICommand(ide: string): boolean {
+	return TUI_COMMANDS.has(ide.trim().split(/\s+/)[0]);
+}
+
 /**
  * 用 IDE 打开路径
  */
@@ -131,6 +147,41 @@ export async function openWithIDE(
 	fuzzy = false,
 ): Promise<{ resolved: string }> {
 	const resolved = fuzzy ? resolveCommand(ide) : ide;
+
+	// TUI 命令（如 claude）以 cwd 进入目录前台运行，直到会话退出
+	if (isTUICommand(resolved)) {
+		// 路径为文件时（如 config.yaml）进入其所在目录
+		let cwd = path;
+		try {
+			if (statSync(path).isFile()) cwd = dirname(path);
+		} catch {
+			// 路径不存在时由下方 existsSync 兜底
+		}
+		if (!existsSync(cwd)) {
+			throw new Error(`路径不存在: ${cwd}`);
+		}
+
+		const isWindows = process.platform === "win32";
+		const shell = isWindows ? process.env.COMSPEC || "cmd.exe" : "/bin/sh";
+		const shellArgs = isWindows ? ["/c"] : ["-c"];
+
+		try {
+			const proc = Bun.spawn([shell, ...shellArgs, resolved], {
+				cwd,
+				stdin: "inherit",
+				stdout: "inherit",
+				stderr: "inherit",
+				env: process.env,
+			});
+			await proc.exited;
+			return { resolved };
+		} catch {
+			throw new Error(
+				`无法打开 ${ide}，请确保 ${resolved} 命令已安装并添加到 PATH 环境变量。`,
+			);
+		}
+	}
+
 	try {
 		await $`${resolved} ${path}`.quiet();
 		return { resolved };

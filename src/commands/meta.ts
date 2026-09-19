@@ -4,7 +4,7 @@ import fse from "fs-extra";
 
 import { loadConfig } from "../core/config";
 import { METADATA_PATH } from "../utils/paths";
-import { openWithIDE } from "../utils/shell";
+import { isTUICommand, openWithIDE } from "../utils/shell";
 import { brand, printError, printInfo, printPath } from "../utils/ui";
 
 export const metaCommand = new Command("meta")
@@ -26,6 +26,18 @@ export const metaCommand = new Command("meta")
 			);
 			printInfo("已创建空的元数据文件");
 			console.log();
+		}
+
+		if (isTUICommand(config.ide)) {
+			// TUI（如 claude）前台运行，不能用 spinner
+			try {
+				await openWithIDE(config.ide, METADATA_PATH);
+			} catch (error) {
+				printError((error as Error).message);
+				printPath("  元数据文件位置", METADATA_PATH);
+				process.exit(1);
+			}
+			return;
 		}
 
 		const s = spinner();

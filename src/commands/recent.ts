@@ -149,13 +149,14 @@ export const recentCommand = new Command("recent")
 
 			stdout.write(`  ${brand.success("✓")} 正在打开 ${brand.primary(project.name)}...\n`);
 
+			// 先释放 stdin、恢复终端状态，避免与 TUI（如 claude）抢占键盘输入
+			cleanup();
+
 			try {
 				await openWithIDE(config.ide, project.path);
 			} catch (error) {
 				stdout.write(`  ${pc.red("✗")} ${(error as Error).message}\n`);
 			}
-
-			cleanup();
 		}
 
 		async function handleDeleteConfirm() {

@@ -381,8 +381,8 @@ p tp
 配置文件位于 `~/.p/config.yaml`。
 
 ```yaml
-# 默认 IDE
-ide: cursor
+# 默认打开方式（claude 等 AI CLI 会在项目目录直接启动终端会话；也可用 cursor, code 等 GUI IDE）
+ide: claude
 
 # 智谱 GLM API Key（AI 命名用，二选一）
 # 在 https://open.bigmodel.cn/ 申请

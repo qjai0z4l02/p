@@ -11,7 +11,7 @@ import {
 	saveProjectMeta,
 	validateProjectNameFormat,
 } from "../core/project";
-import { execAndCapture, openWithIDE } from "../utils/shell";
+import { execAndCapture, isTUICommand, openWithIDE } from "../utils/shell";
 import { PROJECTS_DIR } from "../utils/paths";
 import { brand, printError } from "../utils/ui";
 
@@ -227,6 +227,18 @@ export const cloneCommand = new Command("clone")
 		s.stop(`${brand.success("✓")} 克隆完成`);
 
 		saveProjectMeta(projectName, { template: "clone" });
+
+		if (isTUICommand(config.ide)) {
+			// TUI（如 claude）先收尾输出，再前台进入会话
+			outro(brand.success("✨ 项目克隆成功！"));
+			try {
+				await openWithIDE(config.ide, projectPath);
+			} catch (error) {
+				printError((error as Error).message);
+				console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+			}
+			return;
+		}
 
 		const ideSpinner = spinner();
 		ideSpinner.start(`正在用 ${config.ide} 打开 ${projectName}...`);

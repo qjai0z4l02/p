@@ -16,7 +16,7 @@ import {
 	listProjects,
 	projectExists,
 } from "../core/project";
-import { openWithIDE } from "../utils/shell";
+import { isTUICommand, openWithIDE } from "../utils/shell";
 import { liveSearch, CANCEL } from "../utils/live-search";
 import {
 	filterProjects,
@@ -73,6 +73,17 @@ export const openCommand = new Command("open")
 		// 处理 `:ide` 语法：快速用指定 IDE 打开当前目录
 		if (name?.startsWith(":")) {
 			const ide = name.slice(1);
+			if (isTUICommand(ide)) {
+				// TUI（如 claude）前台运行，不能用 spinner
+				try {
+					await openWithIDE(ide, process.cwd(), true);
+				} catch (error) {
+					printError((error as Error).message);
+					process.exit(1);
+				}
+				return;
+			}
+
 			const s = spinner();
 			s.start(`正在查找 ${ide}...`);
 
@@ -90,6 +101,17 @@ export const openCommand = new Command("open")
 		// 处理 `p open . -i ide` 的情况：用指定 IDE 打开当前目录
 		if (name === ".") {
 			const ide = options?.ide || config.ide;
+			if (isTUICommand(ide)) {
+				// TUI（如 claude）前台运行，不能用 spinner
+				try {
+					await openWithIDE(ide, process.cwd(), !!options?.ide);
+				} catch (error) {
+					printError((error as Error).message);
+					process.exit(1);
+				}
+				return;
+			}
+
 			const s = spinner();
 			s.start(`正在打开...`);
 
@@ -184,6 +206,21 @@ export const openCommand = new Command("open")
 					printError((error as Error).message);
 				}
 			}
+		}
+
+		if (isTUICommand(ide)) {
+			// TUI（如 claude）前台运行，不能用 spinner
+			try {
+				await openWithIDE(ide, projectPath, !!options?.ide);
+			} catch (error) {
+				console.log();
+				printError((error as Error).message);
+				console.log();
+				console.log(pc.dim("  项目路径: ") + pc.underline(projectPath));
+				console.log();
+				process.exit(1);
+			}
+			return;
 		}
 
 		const s = spinner();

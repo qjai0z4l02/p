@@ -3,7 +3,7 @@ import { Command } from "commander";
 
 import { loadConfig } from "../core/config";
 import { CONFIG_PATH } from "../utils/paths";
-import { openWithIDE } from "../utils/shell";
+import { isTUICommand, openWithIDE } from "../utils/shell";
 import { brand, printError, printPath } from "../utils/ui";
 
 export const configCommand = new Command("config")
@@ -15,6 +15,18 @@ export const configCommand = new Command("config")
 		console.log(brand.primary("  ⚙️  配置文件"));
 		printPath("  路径", CONFIG_PATH);
 		console.log();
+
+		if (isTUICommand(config.ide)) {
+			// TUI（如 claude）前台运行，不能用 spinner
+			try {
+				await openWithIDE(config.ide, CONFIG_PATH);
+			} catch (error) {
+				printError((error as Error).message);
+				printPath("  配置文件位置", CONFIG_PATH);
+				process.exit(1);
+			}
+			return;
+		}
 
 		const s = spinner();
 		s.start(`正在用 ${config.ide} 打开配置文件...`);
